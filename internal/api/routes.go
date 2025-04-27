@@ -15,9 +15,6 @@ func SetupRoutes(e *echo.Echo) {
 		return c.String(http.StatusOK, "OK")
 	})
 
-	// todo - check header for v2 (which will not be implemented)
-	// todo - check header for alternate cache name - but not here(?)
-
 	V1 := v1.V1{}
 
 	// V1 cache handlers

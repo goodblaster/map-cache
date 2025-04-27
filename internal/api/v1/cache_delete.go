@@ -14,7 +14,7 @@ func (v V1) HandleDelete() echo.HandlerFunc {
 		key := c.Param("key")
 
 		if err := cache.Delete(c.Request().Context(), key); err != nil {
-			return c.JSON(http.StatusInternalServerError, err)
+			return echo.NewHTTPError(http.StatusInternalServerError, v.WebError(err))
 		}
 
 		return c.NoContent(http.StatusOK)
@@ -27,11 +27,11 @@ func (v V1) HandleDeleteBatch() echo.HandlerFunc {
 		cache := v.Cache(c)
 		var keys []string
 		if err := json.NewDecoder(c.Request().Body).Decode(&keys); err != nil {
-			return c.JSON(http.StatusBadRequest, "Invalid request body")
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 		}
 
 		if err := cache.Delete(c.Request().Context(), keys...); err != nil {
-			return c.JSON(http.StatusInternalServerError, err)
+			return echo.NewHTTPError(http.StatusInternalServerError, v.WebError(err))
 		}
 
 		return c.NoContent(http.StatusOK)

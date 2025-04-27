@@ -17,17 +17,17 @@ func (v V1) HandlePut() echo.HandlerFunc {
 
 		// todo - remove this or add it everywhere?
 		if key == "" {
-			return c.JSON(http.StatusBadRequest, "Key is required")
+			return echo.NewHTTPError(http.StatusBadRequest, "key is required")
 		}
 
 		var body HandlePutBody
 		if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
-			return c.JSON(http.StatusBadRequest, "Invalid request body")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 		}
 
 		// TODO: System to filter error to a WebError?
 		if err := cache.Replace(c.Request().Context(), key, body); err != nil {
-			return c.JSON(http.StatusInternalServerError, v.WebError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, v.WebError(err))
 		}
 
 		// Triggers?
@@ -49,12 +49,12 @@ func (v V1) HandlePutBatch() echo.HandlerFunc {
 		cache := v.Cache(c)
 		var body HandlePutBatchBody
 		if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
-			return c.JSON(http.StatusBadRequest, "Invalid request body")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 		}
 
 		// TODO: System to filter error to a WebError?
 		if err := cache.ReplaceBatch(c.Request().Context(), body.Values); err != nil {
-			return c.JSON(http.StatusInternalServerError, v.WebError(err))
+			return echo.NewHTTPError(http.StatusInternalServerError, v.WebError(err))
 		}
 
 		// Triggers?
