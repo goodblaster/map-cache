@@ -1,0 +1,40 @@
+package caches
+
+import (
+	"context"
+
+	"github.com/goodblaster/map-cache/internal/mapkeys"
+)
+
+// Replace - Replace single value in the cache.
+func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
+	// Check key first. Error if does not exist.
+	if !cache.Map.Exists(mapkeys.Split(key)...) {
+		return ErrKeyNotFound // todo some kind of wrapper to include the key?
+	}
+
+	// Now set the value.
+	_, err := cache.Map.Set(value, mapkeys.Split(key)...)
+	return err // todo wrap
+}
+
+// ReplaceBatch - Replace multiple, existing values in the cache.
+// Each key in the values map is a path to a value in the cache (/a/b/c).
+func (cache *Cache) ReplaceBatch(ctx context.Context, values map[string]any) error {
+	// Check all keys first. Error if any do not exist.
+	for key := range values {
+		if !cache.Map.Exists(mapkeys.Split(key)...) {
+			return ErrKeyNotFound // todo some kind of wrapper to include the key?
+		}
+	}
+
+	// Now set the values.
+	for key, value := range values {
+		_, err := cache.Map.Set(value, mapkeys.Split(key)...)
+		if err != nil {
+			return err
+		} // todo wrap
+	}
+
+	return nil
+}
