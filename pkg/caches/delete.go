@@ -3,13 +3,11 @@ package caches
 import (
 	"context"
 	"strconv"
-
-	"github.com/goodblaster/map-cache/internal/mapkeys"
 )
 
 func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 	for _, key := range keys {
-		path := mapkeys.Split(key)
+		path := SplitKey(key)
 
 		// If the last value of the key is a number, assume it is an array element.
 		// We need to handle those differently.

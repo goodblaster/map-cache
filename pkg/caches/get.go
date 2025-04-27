@@ -2,13 +2,11 @@ package caches
 
 import (
 	"context"
-
-	"github.com/goodblaster/map-cache/internal/mapkeys"
 )
 
 // Get - Get one specific value from the cache.
 func (cache *Cache) Get(ctx context.Context, key string) (any, error) {
-	c := cache.Map.Search(mapkeys.Split(key)...)
+	c := cache.Map.Search(SplitKey(key)...)
 	if c == nil {
 		return nil, ErrKeyNotFound
 	}
@@ -21,7 +19,7 @@ func (cache *Cache) BatchGet(ctx context.Context, keys ...string) (map[string]an
 	vals := map[string]any{}
 
 	for _, key := range keys {
-		c := cache.Map.Search(mapkeys.Split(key)...)
+		c := cache.Map.Search(SplitKey(key)...)
 		if c == nil {
 			continue // todo error on an failure? return what we CAN find?
 		}

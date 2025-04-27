@@ -1,4 +1,4 @@
-package mapkeys
+package caches
 
 import (
 	"strings"
@@ -6,6 +6,6 @@ import (
 	"github.com/goodblaster/map-cache/internal/config"
 )
 
-func Split(key string) []string {
+func SplitKey(key string) []string {
 	return strings.Split(key, config.KeyDelimiter)
 }
