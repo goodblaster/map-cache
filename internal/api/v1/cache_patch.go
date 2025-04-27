@@ -5,18 +5,17 @@ import (
 )
 
 // HandlePatch - Handler for patching the cache.
-func (v V1) HandlePatch() echo.HandlerFunc {
+func HandlePatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		//cache := v.Cache(c)
+		//cache := Cache(c)
 		return nil
 		//var patches []caches.Patch
 		//if err := json.NewDecoder(c.Request().Body).Decode(&patches); err != nil {
 		//	return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 		//}
 		//
-		//// TODO: System to filter error to a WebError?
 		//if err := cache.Patch(c.Request().Context(), patches...); err != nil {
-		//	return echo.NewHTTPError(http.StatusInternalServerError, v.WebError(err))
+		//	return echo.NewHTTPError(http.StatusInternalServerError, v.Error(err))
 		//}
 		//
 		//// Triggers?

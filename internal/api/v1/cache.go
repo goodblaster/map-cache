@@ -5,10 +5,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// V1 - API version 1.
-type V1 struct{}
-
-func (V1) Cache(c echo.Context) *caches.Cache {
+func Cache(c echo.Context) *caches.Cache {
 	value := c.Get("cache")
 	if value == nil {
 		panic("cache value is not set")

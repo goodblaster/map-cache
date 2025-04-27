@@ -8,9 +8,9 @@ import (
 )
 
 // HandleGetValue - Handler for getting a value from the cache.
-func (v V1) HandleGetValue() echo.HandlerFunc {
+func HandleGetValue() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cache := v.Cache(c)
+		cache := Cache(c)
 		key := c.Param("key")
 
 		value, err := cache.Get(c.Request().Context(), key)
@@ -22,11 +22,13 @@ func (v V1) HandleGetValue() echo.HandlerFunc {
 	}
 }
 
+type GetBatchBody []string
+
 // HandleGetBatch - Handler for batch getting values from the cache.
-func (v V1) HandleGetBatch() echo.HandlerFunc {
+func HandleGetBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cache := v.Cache(c)
-		var keys []string
+		cache := Cache(c)
+		var keys GetBatchBody
 		if err := json.NewDecoder(c.Request().Body).Decode(&keys); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 		}

@@ -2,6 +2,8 @@ package caches
 
 import (
 	"context"
+
+	"github.com/goodblaster/errors"
 )
 
 // Create - Create root-level keys/value pairs.
@@ -24,7 +26,7 @@ func (cache *Cache) Create(ctx context.Context, values map[string]any) error {
 	for key, value := range values {
 		_, err := cache.Map.Set(value, SplitKey(key)...)
 		if err != nil {
-			return err // todo wrap
+			return errors.Wrap(err, "could not set value")
 		}
 	}
 
