@@ -15,7 +15,7 @@ func HandleGetValue() echo.HandlerFunc {
 
 		value, err := cache.Get(c.Request().Context(), key)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusNotFound, "key not found")
+			return ApiError(c, http.StatusNotFound, "key not found")
 		}
 
 		return c.JSON(http.StatusOK, value)
@@ -30,12 +30,12 @@ func HandleGetBatch() echo.HandlerFunc {
 		cache := Cache(c)
 		var keys GetBatchBody
 		if err := json.NewDecoder(c.Request().Body).Decode(&keys); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+			return ApiError(c, http.StatusBadRequest, "invalid request body")
 		}
 
 		value, err := cache.BatchGet(c.Request().Context(), keys...)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusNotFound, "key not found")
+			return ApiError(c, http.StatusNotFound, "key not found")
 		}
 
 		return c.JSON(http.StatusOK, value)

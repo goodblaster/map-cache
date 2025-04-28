@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/goodblaster/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -14,7 +15,7 @@ func HandleDelete() echo.HandlerFunc {
 		key := c.Param("key")
 
 		if err := cache.Delete(c.Request().Context(), key); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, WebError(err))
+			return ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not delete key"))
 		}
 
 		return c.NoContent(http.StatusOK)
@@ -29,11 +30,11 @@ func HandleDeleteBatch() echo.HandlerFunc {
 		cache := Cache(c)
 		var keys DeleteBatchBody
 		if err := json.NewDecoder(c.Request().Body).Decode(&keys); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+			return ApiError(c, http.StatusBadRequest, "Invalid request body")
 		}
 
 		if err := cache.Delete(c.Request().Context(), keys...); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, WebError(err))
+			return ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not delete keys"))
 		}
 
 		return c.NoContent(http.StatusOK)

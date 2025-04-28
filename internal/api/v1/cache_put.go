@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/goodblaster/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -17,11 +18,11 @@ func HandlePut() echo.HandlerFunc {
 
 		var body HandlePutBody
 		if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+			return ApiError(c, http.StatusBadRequest, "invalid request body")
 		}
 
 		if err := cache.Replace(c.Request().Context(), key, body); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, WebError(err))
+			return ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not replace contents"))
 		}
 
 		// Triggers?
@@ -40,11 +41,11 @@ func HandleReplaceBatch() echo.HandlerFunc {
 		cache := Cache(c)
 		var body ReplaceBatchBody
 		if err := json.NewDecoder(c.Request().Body).Decode(&body); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+			return ApiError(c, http.StatusBadRequest, "invalid request body")
 		}
 
 		if err := cache.ReplaceBatch(c.Request().Context(), body); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, WebError(err))
+			return ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not replace contents"))
 		}
 
 		// Triggers?

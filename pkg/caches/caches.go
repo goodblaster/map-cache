@@ -11,6 +11,15 @@ var caches = sync.Map{}
 
 const DefaultName = "default"
 
+func List() []string {
+	var cacheNames []string
+	caches.Range(func(key, value interface{}) bool {
+		cacheNames = append(cacheNames, key.(string))
+		return true
+	})
+	return cacheNames
+}
+
 func AddCache(name string) error {
 	_, exists := caches.Load(name)
 	if exists {
@@ -31,6 +40,17 @@ func FetchCache(name string) (*Cache, error) {
 
 	cache := val.(*Cache)
 	return cache, nil
+}
+
+// DeleteCache - delete the cache.
+func DeleteCache(name string) error {
+	_, exists := caches.Load(name)
+	if !exists {
+		return ErrKeyNotFound
+	}
+
+	caches.Delete(name)
+	return nil
 }
 
 func Exists(name string) bool {

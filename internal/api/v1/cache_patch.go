@@ -11,11 +11,11 @@ func HandlePatch() echo.HandlerFunc {
 		return nil
 		//var patches []caches.Patch
 		//if err := json.NewDecoder(c.Request().Body).Decode(&patches); err != nil {
-		//	return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+		//	return ApiError(c, http.StatusBadRequest, "invalid request body")
 		//}
 		//
 		//if err := cache.Patch(c.Request().Context(), patches...); err != nil {
-		//	return echo.NewHTTPError(http.StatusInternalServerError, v.Error(err))
+		//	return ApiError(c, http.StatusInternalServerError, v.Error(err))
 		//}
 		//
 		//// Triggers?

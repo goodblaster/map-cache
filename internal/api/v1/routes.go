@@ -20,35 +20,44 @@ func SetupRoutes(e *echo.Echo) {
 	SetupCacheRoutes(v1)
 }
 
-func SetupCacheRoutes(v1 *echo.Group) {
+func SetupCacheRoutes(group *echo.Group) {
 	// cache handlers
-	gCache := v1.Group("/cache", cacheMW)
+	group = group.Group("/cache", cacheMW)
 
 	// --- Create keys ---
-	gCache.POST("", HandleCreateKeys())
+	group.POST("", HandleCreateKeys())
 
 	// --- Read keys ---
-	gCache.GET("/:key", HandleGetValue()) // Get single key
-	gCache.POST("/get", HandleGetBatch()) // Get multiple keys (batch)
+	group.GET("/:key", HandleGetValue()) // Get single key
+	group.POST("/get", HandleGetBatch()) // Get multiple keys (batch)
 
 	// --- Update keys ---
-	gCache.PUT("/:key", HandlePut())     // Full replace single
-	gCache.PUT("", HandleReplaceBatch()) // Full replace batch
+	group.PUT("/:key", HandlePut())     // Full replace single
+	group.PUT("", HandleReplaceBatch()) // Full replace batch
 
 	// ---
-	//gCache.PATCH("/:key", HandlePatch()) // Partial update single
-	//gCache.PATCH("", HandlePatchBatch()) // Partial update batch
+	//group.PATCH("/:key", HandlePatch()) // Partial update single
+	//group.PATCH("", HandlePatchBatch()) // Partial update batch
 
 	// --- Delete keys ---
-	gCache.DELETE("/:key", HandleDelete())      // Delete single key
-	gCache.POST("/delete", HandleDeleteBatch()) // Delete batch (POST because DELETE doesn't accept bodies cleanly)
+	group.DELETE("/:key", HandleDelete())      // Delete single key
+	group.POST("/delete", HandleDeleteBatch()) // Delete batch (POST because DELETE doesn't accept bodies cleanly)
 }
 
-func SetupCachesRoutes() {
+func SetupCachesRoutes(group *echo.Group) {
+	gCaches := group.Group("/caches")
 
+	// Get cache name list
+	gCaches.GET("", HandleGetCacheList())
+
+	// Create a cache
+	gCaches.POST("", HandleCreateCache())
+
+	// Delete a cache
+	gCaches.DELETE("/:name", HandleDeleteCache())
 }
 
-func SetupTriggerRoutes() {
+func SetupTriggerRoutes(v1 *echo.Group) {
 
 }
 
@@ -63,7 +72,7 @@ func cacheMW(next echo.HandlerFunc) echo.HandlerFunc {
 		// Make sure it exists
 		cache, err := caches.FetchCache(cacheName)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusFailedDependency, "cache not found")
+			return ApiError(c, http.StatusFailedDependency, "cache not found")
 		}
 
 		// Generate a request ID and set it in the context
