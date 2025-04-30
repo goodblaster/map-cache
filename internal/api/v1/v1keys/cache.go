@@ -1,4 +1,4 @@
-package v1
+package v1keys
 
 import (
 	"github.com/goodblaster/map-cache/pkg/caches"

@@ -7,11 +7,11 @@ import (
 )
 
 // Create - Create root-level keys/value pairs.
-func (cache *Cache) Create(ctx context.Context, values map[string]any) error {
+func (cache *Cache) Create(ctx context.Context, entries map[string]any) error {
 	// Check all keys first.
 	// Keys must be a single path segment.
 	// And the keys must not already exist.
-	for key := range values {
+	for key := range entries {
 		path := SplitKey(key)
 		if len(path) != 1 {
 			return ErrSinglePathKeyRequired
@@ -22,8 +22,8 @@ func (cache *Cache) Create(ctx context.Context, values map[string]any) error {
 		}
 	}
 
-	// Now set the values.
-	for key, value := range values {
+	// Now set the entries.
+	for key, value := range entries {
 		_, err := cache.Map.Set(value, SplitKey(key)...)
 		if err != nil {
 			return errors.Wrap(err, "could not set value")

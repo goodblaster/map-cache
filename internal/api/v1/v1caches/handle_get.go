@@ -1,4 +1,4 @@
-package v1
+package v1caches
 
 import (
 	"net/http"
@@ -7,8 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// HandleGetCacheList - Handler for getting list of all caches.
-func HandleGetCacheList() echo.HandlerFunc {
+// handleGetCacheList - Handler for getting list of all caches.
+func handleGetCacheList() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		list := caches.List()
 		return c.JSON(http.StatusOK, list)
