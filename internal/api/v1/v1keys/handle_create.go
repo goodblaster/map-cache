@@ -26,9 +26,9 @@ func (req createKeysRequest) Validate() error { return nil }
 // @Produce json
 // @Param  body  body  createKeysRequest  true  "Request body"
 // @Success 201 {string} string "Created"
-// @Failure 400 {object} echo.HTTPError "Invalid request body"
-// @Failure 409 {object} echo.HTTPError "Cache key already exists"
-// @Failure 500 {object} echo.HTTPError "Internal server error"
+// @Failure 400 {object} v1errors.ErrorResponse "Bad request – invalid JSON or failed validation"
+// @Failure 409 {object} v1errors.ErrorResponse "Conflict – cache key already exists"
+// @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
 // @Router /api/v1/keys [post]
 func handleCreate() echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -44,9 +44,9 @@ func handleCreate() echo.HandlerFunc {
 		cache := Cache(c)
 		if err := cache.Create(c.Request().Context(), body.Entries); err != nil {
 			if errors.Is(err, caches.ErrKeyAlreadyExists) {
-				return v1errors.ApiError(c, http.StatusConflict, errors.Wrap(err, "V1Keys(s) already exists"))
+				return v1errors.ApiError(c, http.StatusConflict, errors.Wrap(err, "key(s) already exists"))
 			}
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "failed to create V1Keys"))
+			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "failed to create keys"))
 		}
 
 		// Triggers?

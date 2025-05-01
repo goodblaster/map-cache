@@ -47,21 +47,21 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request body",
+                        "description": "Bad request – invalid JSON or failed validation",
                         "schema": {
-                            "$ref": "#/definitions/echo.HTTPError"
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
                         }
                     },
                     "409": {
-                        "description": "Cache key already exists",
+                        "description": "Conflict – cache key already exists",
                         "schema": {
-                            "$ref": "#/definitions/echo.HTTPError"
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/echo.HTTPError"
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
                         }
                     }
                 }
@@ -69,7 +69,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "echo.HTTPError": {
+        "v1errors.ErrorResponse": {
             "type": "object",
             "properties": {
                 "message": {}

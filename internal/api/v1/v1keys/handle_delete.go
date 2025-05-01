@@ -26,7 +26,7 @@ type deleteBatchRequest struct {
 	Keys []string `json:"keys"`
 }
 
-// handleDeleteBatch - Handler for deleting multiple V1Keys from the cache.
+// handleDeleteBatch - Handler for deleting multiple keys from the cache.
 func handleDeleteBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
@@ -36,7 +36,7 @@ func handleDeleteBatch() echo.HandlerFunc {
 		}
 
 		if err := cache.Delete(c.Request().Context(), req.Keys...); err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not delete V1Keys"))
+			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not delete keys"))
 		}
 
 		return c.NoContent(http.StatusOK)

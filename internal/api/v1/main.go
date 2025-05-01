@@ -1,6 +1,6 @@
 package v1
 
-//go:generate swag init --parseDependency --parseInternal --outputTypes json
+//go:generate swag init --parseDependency --parseInternal --outputTypes json,go
 
 // This exists only to make swaggo happy.
 // @title Web Cache API

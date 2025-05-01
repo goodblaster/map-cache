@@ -8,14 +8,14 @@ func SetupRoutes(group *echo.Group) {
 	// cache handlers
 	group = group.Group("/keys", cacheMW)
 
-	// --- Create V1Keys ---
+	// --- Create keys ---
 	group.POST("", handleCreate())
 
-	// --- Read V1Keys ---
+	// --- Read keys ---
 	group.GET("/:key", handleGetValue()) // Get single key
-	group.POST("/get", handleGetBatch()) // Get multiple v1Keys (batch)
+	group.POST("/get", handleGetBatch()) // Get multiple keys (batch)
 
-	// --- Update V1Keys ---
+	// --- Update keys ---
 	group.PUT("/:key", handlePut())     // Full replace single
 	group.PUT("", handleReplaceBatch()) // Full replace batch
 
@@ -23,7 +23,7 @@ func SetupRoutes(group *echo.Group) {
 	//group.PATCH("/:key", handlePatch()) // Partial update single
 	//group.PATCH("", handlePatchBatch()) // Partial update batch
 
-	// --- Delete V1Keys ---
+	// --- Delete keys ---
 	group.DELETE("/:key", handleDelete())      // Delete single key
 	group.POST("/delete", handleDeleteBatch()) // Delete batch (POST because DELETE doesn't accept bodies cleanly)
 }
