@@ -2,6 +2,7 @@ package v1
 
 import (
 	"net/http"
+	"path"
 
 	_ "github.com/goodblaster/map-cache/internal/api/v1/docs"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1caches"
@@ -15,7 +16,7 @@ func SetupRoutes(e *echo.Echo) {
 	e.Pre(middleware.RemoveTrailingSlash())
 	v1 := e.Group("/api/v1")
 	v1.GET("", func(c echo.Context) error {
-		return c.Redirect(http.StatusMovedPermanently, c.Request().URL.Path+"/index.html")
+		return c.Redirect(http.StatusMovedPermanently, path.Join(c.Request().URL.Path, "/index.html"))
 	})
 	v1.GET("/*", echoSwagger.WrapHandler)
 

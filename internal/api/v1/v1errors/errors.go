@@ -55,8 +55,7 @@ func ApiError(c echo.Context, code int, errmsg any) *ErrorResponse {
 // swagger:model ErrorResponse
 type ErrorResponse struct {
 	// A human-readable message or structured error detail
-	// Example: "Validation failed"
-	Message any `json:"message" example:"Validation failed"`
+	Message any `json:"message"`
 
 	// Internal is not exposed in Swagger
 	Internal error `json:"-"`

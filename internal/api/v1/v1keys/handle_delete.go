@@ -8,7 +8,25 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// handleDelete - Handler for deleting a single key from the cache.
+// deleteBatchRequest represents the request body for batch key deletion.
+//
+// swagger:model deleteBatchRequest
+type deleteBatchRequest struct {
+	// List of keys to delete
+	// required: true
+	Keys []string `json:"keys"`
+}
+
+// handleDelete handles deletion of a single cache key.
+//
+// @Summary Delete a single key
+// @Description Deletes a single key from the specified cache
+// @Tags keys
+// @Produce json
+// @Param key path string true "Key to delete"
+// @Success 200 {string} string "Key deleted successfully"
+// @Failure 500 {object} v1errors.ErrorResponse "Server error"
+// @Router /api/v1/keys/{key} [delete]
 func handleDelete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
@@ -22,11 +40,18 @@ func handleDelete() echo.HandlerFunc {
 	}
 }
 
-type deleteBatchRequest struct {
-	Keys []string `json:"keys"`
-}
-
-// handleDeleteBatch - Handler for deleting multiple keys from the cache.
+// handleDeleteBatch handles deletion of multiple keys.
+//
+// @Summary Delete multiple keys
+// @Description Deletes multiple keys from the specified cache
+// @Tags keys
+// @Accept json
+// @Produce json
+// @Param body body deleteBatchRequest true "List of keys to delete"
+// @Success 200 {string} string "Keys deleted successfully"
+// @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
+// @Failure 500 {object} v1errors.ErrorResponse "Server error"
+// @Router /api/v1/keys [post]
 func handleDeleteBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)

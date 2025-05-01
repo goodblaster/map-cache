@@ -21,7 +21,7 @@ func (req createKeysRequest) Validate() error { return nil }
 //
 // @Summary Create cache entries
 // @Description Creates one or more keys in the cache with values
-// @Tags cache
+// @Tags keys
 // @Accept json
 // @Produce json
 // @Param  body  body  createKeysRequest  true  "Request body"
@@ -44,7 +44,7 @@ func handleCreate() echo.HandlerFunc {
 		cache := Cache(c)
 		if err := cache.Create(c.Request().Context(), body.Entries); err != nil {
 			if errors.Is(err, caches.ErrKeyAlreadyExists) {
-				return v1errors.ApiError(c, http.StatusConflict, errors.Wrap(err, "key(s) already exists"))
+				return v1errors.ApiError(c, http.StatusConflict, errors.Wrap(err, "keys already exist"))
 			}
 			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "failed to create keys"))
 		}

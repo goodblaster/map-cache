@@ -16,8 +16,8 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/api/v1/keys": {
-            "post": {
-                "description": "Creates one or more keys in the cache with values",
+            "put": {
+                "description": "Replaces multiple entries in the cache",
                 "consumes": [
                     "application/json"
                 ],
@@ -25,41 +25,243 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "cache"
+                    "keys"
                 ],
-                "summary": "Create cache entries",
+                "summary": "Replace multiple values",
                 "parameters": [
                     {
-                        "description": "Request body",
+                        "description": "Map of key-value pairs to replace",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1keys.createKeysRequest"
+                            "$ref": "#/definitions/v1keys.replaceBatchRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "Values replaced successfully",
                         "schema": {
                             "type": "string"
                         }
                     },
                     "400": {
-                        "description": "Bad request – invalid JSON or failed validation",
-                        "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict – cache key already exists",
+                        "description": "Invalid request body",
                         "schema": {
                             "$ref": "#/definitions/v1errors.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Deletes multiple keys from the specified cache",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Delete multiple keys",
+                "parameters": [
+                    {
+                        "description": "List of keys to delete",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1keys.deleteBatchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Keys deleted successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/keys/get": {
+            "post": {
+                "description": "Retrieves values for a list of cache keys",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Get multiple values",
+                "parameters": [
+                    {
+                        "description": "List of keys to retrieve",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1keys.getBatchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Map of keys to values",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "One or more keys not found",
+                        "schema": {
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/keys/{key}": {
+            "get": {
+                "description": "Retrieves the value associated with a single cache key",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Get a single value",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to retrieve",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Value for the given key",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Key not found",
+                        "schema": {
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Replaces the value of a key in the cache",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Replace a single value",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to update",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New value for the key",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1keys.handlePutRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Value replaced successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a single key from the specified cache",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Delete a single key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Key to delete",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Key deleted successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
                         "schema": {
                             "$ref": "#/definitions/v1errors.ErrorResponse"
                         }
@@ -72,13 +274,57 @@ const docTemplate = `{
         "v1errors.ErrorResponse": {
             "type": "object",
             "properties": {
-                "message": {}
+                "message": {
+                    "description": "A human-readable message or structured error detail"
+                }
             }
         },
         "v1keys.createKeysRequest": {
             "type": "object",
             "properties": {
                 "entries": {
+                    "type": "object",
+                    "additionalProperties": {}
+                }
+            }
+        },
+        "v1keys.deleteBatchRequest": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "description": "List of keys to delete\nrequired: true",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1keys.getBatchRequest": {
+            "type": "object",
+            "properties": {
+                "keys": {
+                    "description": "List of keys to retrieve\nrequired: true",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "v1keys.handlePutRequest": {
+            "type": "object",
+            "properties": {
+                "value": {
+                    "description": "New value to store for the key\nrequired: true"
+                }
+            }
+        },
+        "v1keys.replaceBatchRequest": {
+            "type": "object",
+            "properties": {
+                "entries": {
+                    "description": "Map of keys to their new values\nrequired: true",
                     "type": "object",
                     "additionalProperties": {}
                 }

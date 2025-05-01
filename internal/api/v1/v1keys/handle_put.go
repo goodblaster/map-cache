@@ -8,11 +8,28 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// handlePutRequest - Body for the HandlePut function.
+// handlePutRequest represents the request body for replacing a single cache value.
+//
+// swagger:model handlePutRequest
 type handlePutRequest struct {
+	// New value to store for the key
+	// required: true
 	Value any `json:"value"`
 }
 
+// handlePut replaces the value of a single key in the cache.
+//
+// @Summary Replace a single value
+// @Description Replaces the value of a key in the cache
+// @Tags keys
+// @Accept json
+// @Produce json
+// @Param key path string true "Key to update"
+// @Param body body handlePutRequest true "New value for the key"
+// @Success 200 {string} string "Value replaced successfully"
+// @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
+// @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
+// @Router /api/v1/keys/{key} [put]
 func handlePut() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
@@ -34,12 +51,27 @@ func handlePut() echo.HandlerFunc {
 	}
 }
 
-// replaceBatchRequest - Body for the HandleReplaceBatch function.
+// replaceBatchRequest represents the request body for batch replacing values.
+//
+// swagger:model replaceBatchRequest
 type replaceBatchRequest struct {
+	// Map of keys to their new values
+	// required: true
 	Entries map[string]any `json:"entries"`
 }
 
-// handleReplaceBatch - Handler for batch modifying values in the cache.
+// handleReplaceBatch replaces multiple key-value pairs in the cache.
+//
+// @Summary Replace multiple values
+// @Description Replaces multiple entries in the cache
+// @Tags keys
+// @Accept json
+// @Produce json
+// @Param body body replaceBatchRequest true "Map of key-value pairs to replace"
+// @Success 200 {string} string "Values replaced successfully"
+// @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
+// @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
+// @Router /api/v1/keys [put]
 func handleReplaceBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
