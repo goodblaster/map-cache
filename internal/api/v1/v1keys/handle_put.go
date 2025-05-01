@@ -15,7 +15,7 @@ type handlePutRequest struct {
 	// New value to store for the key
 	// required: true
 	Value any `json:"value"`
-}
+} // @name HandlePutRequest
 
 // handlePut replaces the value of a single key in the cache.
 //
@@ -58,7 +58,7 @@ type replaceBatchRequest struct {
 	// Map of keys to their new values
 	// required: true
 	Entries map[string]any `json:"entries"`
-}
+} // @name ReplaceBatchRequest
 
 // handleReplaceBatch replaces multiple key-value pairs in the cache.
 //

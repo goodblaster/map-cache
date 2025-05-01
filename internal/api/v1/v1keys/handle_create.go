@@ -12,7 +12,7 @@ import (
 // createKeysRequest is the request body for creating new cache entries.
 type createKeysRequest struct {
 	Entries map[string]any `json:"entries"`
-}
+} // @name CreateKeysRequest
 
 // Validate - Validates the createKeysRequest.
 func (req createKeysRequest) Validate() error { return nil }

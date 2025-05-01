@@ -14,7 +14,7 @@ type getBatchRequest struct {
 	// List of keys to retrieve
 	// required: true
 	Keys []string `json:"keys"`
-}
+} // @name GetBatchRequest
 
 // handleGetValue retrieves a single value from the cache.
 //

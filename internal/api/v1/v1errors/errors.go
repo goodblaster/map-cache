@@ -62,7 +62,7 @@ type ErrorResponse struct {
 
 	// Code is not exposed in Swagger
 	Code int `json:"-"`
-}
+} // @name ErrorResponse
 
 func NewErrorResponse(code int, message ...interface{}) *ErrorResponse {
 	he := &ErrorResponse{Code: code, Message: http.StatusText(code)}

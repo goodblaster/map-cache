@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1keys.replaceBatchRequest"
+                            "$ref": "#/definitions/ReplaceBatchRequest"
                         }
                     }
                 ],
@@ -49,17 +49,69 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
             },
+            "post": {
+                "description": "Creates one or more keys in the cache with values",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "keys"
+                ],
+                "summary": "Create cache entries",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateKeysRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request – invalid JSON or failed validation",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict – cache key already exists",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/keys/delete": {
             "post": {
                 "description": "Deletes multiple keys from the specified cache",
                 "consumes": [
@@ -79,7 +131,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1keys.deleteBatchRequest"
+                            "$ref": "#/definitions/DeleteBatchRequest"
                         }
                     }
                 ],
@@ -93,13 +145,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Server error",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
@@ -125,7 +177,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1keys.getBatchRequest"
+                            "$ref": "#/definitions/GetBatchRequest"
                         }
                     }
                 ],
@@ -140,13 +192,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "One or more keys not found",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
@@ -179,7 +231,7 @@ const docTemplate = `{
                     "404": {
                         "description": "Key not found",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
@@ -210,7 +262,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/v1keys.handlePutRequest"
+                            "$ref": "#/definitions/HandlePutRequest"
                         }
                     }
                 ],
@@ -224,13 +276,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request body",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
@@ -263,7 +315,115 @@ const docTemplate = `{
                     "500": {
                         "description": "Server error",
                         "schema": {
-                            "$ref": "#/definitions/v1errors.ErrorResponse"
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/caches": {
+            "get": {
+                "description": "Returns a list of currently registered cache names.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "caches"
+                ],
+                "summary": "List all caches",
+                "responses": {
+                    "200": {
+                        "description": "List of cache names",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new named cache. Optionally accepts expiration (not yet implemented).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "caches"
+                ],
+                "summary": "Create a new cache",
+                "parameters": [
+                    {
+                        "description": "Cache creation payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateCacheRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or bad payload",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/caches/{name}": {
+            "delete": {
+                "description": "Deletes a cache with the specified name.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "caches"
+                ],
+                "summary": "Delete a cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the cache to delete",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid cache name",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Cache not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
                         }
                     }
                 }
@@ -271,15 +431,20 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "v1errors.ErrorResponse": {
+        "CreateCacheRequest": {
             "type": "object",
             "properties": {
-                "message": {
-                    "description": "A human-readable message or structured error detail"
+                "expiration": {
+                    "description": "Expiration duration for the cache in Go duration format (e.g., \"5m\", \"1h\").\nCurrently not implemented.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name of the cache to create\nrequired: true",
+                    "type": "string"
                 }
             }
         },
-        "v1keys.createKeysRequest": {
+        "CreateKeysRequest": {
             "type": "object",
             "properties": {
                 "entries": {
@@ -288,7 +453,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1keys.deleteBatchRequest": {
+        "DeleteBatchRequest": {
             "type": "object",
             "properties": {
                 "keys": {
@@ -300,7 +465,15 @@ const docTemplate = `{
                 }
             }
         },
-        "v1keys.getBatchRequest": {
+        "ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "A human-readable message or structured error detail"
+                }
+            }
+        },
+        "GetBatchRequest": {
             "type": "object",
             "properties": {
                 "keys": {
@@ -312,7 +485,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1keys.handlePutRequest": {
+        "HandlePutRequest": {
             "type": "object",
             "properties": {
                 "value": {
@@ -320,7 +493,7 @@ const docTemplate = `{
                 }
             }
         },
-        "v1keys.replaceBatchRequest": {
+        "ReplaceBatchRequest": {
             "type": "object",
             "properties": {
                 "entries": {

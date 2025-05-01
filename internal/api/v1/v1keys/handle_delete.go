@@ -15,7 +15,7 @@ type deleteBatchRequest struct {
 	// List of keys to delete
 	// required: true
 	Keys []string `json:"keys"`
-}
+} // @name DeleteBatchRequest
 
 // handleDelete handles deletion of a single cache key.
 //
@@ -51,7 +51,7 @@ func handleDelete() echo.HandlerFunc {
 // @Success 200 {string} string "Keys deleted successfully"
 // @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
 // @Failure 500 {object} v1errors.ErrorResponse "Server error"
-// @Router /api/v1/keys [post]
+// @Router /api/v1/keys/delete [post]
 func handleDeleteBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
