@@ -17,6 +17,19 @@ type deleteBatchRequest struct {
 	Keys []string `json:"keys"`
 } // @name DeleteBatchRequest
 
+// Validate - Validates the deleteBatchRequest.
+func (req deleteBatchRequest) Validate() error {
+	if len(req.Keys) == 0 {
+		return errors.New("at least one key is required")
+	}
+	for _, key := range req.Keys {
+		if key == "" {
+			return errors.New("key cannot be empty")
+		}
+	}
+	return nil
+}
+
 // handleDelete handles deletion of a single cache key.
 //
 // @Summary Delete a single key
@@ -58,6 +71,10 @@ func handleDeleteBatch() echo.HandlerFunc {
 		var req deleteBatchRequest
 		if err := c.Bind(&req); err != nil {
 			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+		}
+
+		if err := req.Validate(); err != nil {
+			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
 		}
 
 		if err := cache.Delete(c.Request().Context(), req.Keys...); err != nil {

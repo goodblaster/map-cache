@@ -17,6 +17,10 @@ type handlePutRequest struct {
 	Value any `json:"value"`
 } // @name HandlePutRequest
 
+func (req handlePutRequest) Validate() error {
+	return nil
+}
+
 // handlePut replaces the value of a single key in the cache.
 //
 // @Summary Replace a single value
@@ -40,6 +44,10 @@ func handlePut() echo.HandlerFunc {
 			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
 		}
 
+		if err := req.Validate(); err != nil {
+			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
+		}
+
 		if err := cache.Replace(c.Request().Context(), key, req.Value); err != nil {
 			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not replace contents"))
 		}
@@ -60,6 +68,15 @@ type replaceBatchRequest struct {
 	Entries map[string]any `json:"entries"`
 } // @name ReplaceBatchRequest
 
+func (req replaceBatchRequest) Validate() error {
+	for key := range req.Entries {
+		if key == "" {
+			return errors.New("key cannot be empty")
+		}
+	}
+	return nil
+}
+
 // handleReplaceBatch replaces multiple key-value pairs in the cache.
 //
 // @Summary Replace multiple values
@@ -78,6 +95,10 @@ func handleReplaceBatch() echo.HandlerFunc {
 		var req replaceBatchRequest
 		if err := c.Bind(&req); err != nil {
 			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+		}
+
+		if err := req.Validate(); err != nil {
+			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
 		}
 
 		if err := cache.ReplaceBatch(c.Request().Context(), req.Entries); err != nil {

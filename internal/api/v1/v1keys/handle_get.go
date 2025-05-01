@@ -3,6 +3,7 @@ package v1keys
 import (
 	"net/http"
 
+	"github.com/goodblaster/errors"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
 	"github.com/labstack/echo/v4"
 )
@@ -15,6 +16,18 @@ type getBatchRequest struct {
 	// required: true
 	Keys []string `json:"keys"`
 } // @name GetBatchRequest
+
+func (req getBatchRequest) Validate() error {
+	if len(req.Keys) == 0 {
+		return errors.New("at least one key is required")
+	}
+	for _, key := range req.Keys {
+		if key == "" {
+			return errors.New("key cannot be empty")
+		}
+	}
+	return nil
+}
 
 // handleGetValue retrieves a single value from the cache.
 //
@@ -58,6 +71,10 @@ func handleGetBatch() echo.HandlerFunc {
 		var req getBatchRequest
 		if err := c.Bind(&req); err != nil {
 			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+		}
+
+		if err := req.Validate(); err != nil {
+			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
 		}
 
 		value, err := cache.BatchGet(c.Request().Context(), req.Keys...)

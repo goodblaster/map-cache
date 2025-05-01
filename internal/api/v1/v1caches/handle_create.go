@@ -2,7 +2,9 @@ package v1caches
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/goodblaster/errors"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
@@ -18,8 +20,16 @@ type createCacheRequest struct {
 
 	// Expiration duration for the cache in Go duration format (e.g., "5m", "1h").
 	// Currently not implemented.
-	Expiration string `json:"expiration"`
+	Expiration *time.Time `json:"expiration,omitempty"`
 } // @name CreateCacheRequest
+
+func (req createCacheRequest) Validate() error {
+	if req.Name == "" {
+		return errors.New("cache name is required")
+	}
+
+	return nil
+}
 
 // handleCreateCache creates a new cache.
 //
@@ -35,12 +45,16 @@ type createCacheRequest struct {
 // @Router /caches [post]
 func handleCreateCache() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var body createCacheRequest
-		if err := c.Bind(&body); err != nil {
+		var req createCacheRequest
+		if err := c.Bind(&req); err != nil {
 			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
 		}
 
-		err := caches.AddCache(body.Name)
+		if err := req.Validate(); err != nil {
+			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
+		}
+
+		err := caches.AddCache(req.Name)
 		if err != nil {
 			return v1errors.ApiError(c, http.StatusInternalServerError, "failed to create cache")
 		}
