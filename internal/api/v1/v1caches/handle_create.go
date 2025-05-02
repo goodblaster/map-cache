@@ -51,7 +51,7 @@ func handleCreateCache() echo.HandlerFunc {
 		}
 
 		if err := req.Validate(); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
+			return v1errors.ApiError(c, http.StatusBadRequest, err)
 		}
 
 		err := caches.AddCache(req.Name)

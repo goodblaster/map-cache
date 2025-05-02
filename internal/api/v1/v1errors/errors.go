@@ -37,17 +37,21 @@ func WebError(err error) error {
 	return &Error{Msg: msg}
 }
 
-func ApiError(c echo.Context, code int, errmsg any) *ErrorResponse {
+// ApiError - Log error and returns a JSON response to the client.
+func ApiError(c echo.Context, code int, errmsg any) error {
 	err, _ := errmsg.(error)
-
+	resp := NewErrorResponse(code, errmsg)
 	log := logos.With("request", c.Request().RequestURI).With("status", code)
+
 	if err != nil {
+		resp.Internal = err
+		resp.Message = WebError(err).Error()
 		log.WithError(err).Error(errmsg)
-		return NewErrorResponse(code, WebError(err))
+		return c.JSON(code, resp)
 	}
 
 	log.Error(errmsg)
-	return NewErrorResponse(code, errmsg)
+	return c.JSON(code, resp)
 }
 
 // ErrorResponse represents a standard error response.
