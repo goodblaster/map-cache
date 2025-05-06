@@ -8,7 +8,7 @@ import (
 func (cache *Cache) Get(ctx context.Context, key string) (any, error) {
 	c := cache.Map.Search(SplitKey(key)...)
 	if c == nil {
-		return nil, ErrKeyNotFound
+		return nil, ErrKeyNotFound.Format(key)
 	}
 
 	return c.Data(), nil

@@ -14,11 +14,11 @@ func (cache *Cache) Create(ctx context.Context, entries map[string]any) error {
 	for key := range entries {
 		path := SplitKey(key)
 		if len(path) != 1 {
-			return ErrSinglePathKeyRequired
+			return ErrSinglePathKeyRequired.Format(key)
 		}
 
 		if cache.Map.Exists(path[0]) {
-			return ErrKeyAlreadyExists
+			return ErrKeyAlreadyExists.Format(path)
 		}
 	}
 

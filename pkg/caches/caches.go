@@ -46,7 +46,7 @@ func FetchCache(name string) (*Cache, error) {
 func DeleteCache(name string) error {
 	_, exists := caches.Load(name)
 	if !exists {
-		return ErrKeyNotFound
+		return ErrKeyNotFound.Format(name)
 	}
 
 	caches.Delete(name)

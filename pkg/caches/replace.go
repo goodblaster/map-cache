@@ -10,7 +10,7 @@ import (
 func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
 	// Check key first. Error if does not exist.
 	if !cache.Map.Exists(SplitKey(key)...) {
-		return ErrKeyNotFound
+		return ErrKeyNotFound.Format(key)
 	}
 
 	// Now set the value.
@@ -28,7 +28,7 @@ func (cache *Cache) ReplaceBatch(ctx context.Context, values map[string]any) err
 	// Check all keys first. Error if any do not exist.
 	for key := range values {
 		if !cache.Map.Exists(SplitKey(key)...) {
-			return ErrKeyNotFound // todo some kind of wrapper to include the key?
+			return ErrKeyNotFound.Format(key)
 		}
 	}
 

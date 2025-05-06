@@ -4,7 +4,7 @@ go 1.23.7
 
 require (
 	github.com/Jeffail/gabs/v2 v2.7.0
-	github.com/goodblaster/errors v0.0.3
+	github.com/goodblaster/errors v0.0.4
 	github.com/goodblaster/logos v0.1.0
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.3
