@@ -53,11 +53,6 @@ func DeleteCache(name string) error {
 	return nil
 }
 
-func Exists(name string) bool {
-	_, exists := caches.Load(name)
-	return exists
-}
-
 // Acquire - Acquire the cache if you already have a reference to it.
 func (cache *Cache) Acquire(tag string) *Cache {
 	cache.mutex.Lock()

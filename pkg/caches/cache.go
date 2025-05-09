@@ -2,6 +2,7 @@ package caches
 
 import (
 	"sync"
+	"time"
 
 	"github.com/Jeffail/gabs/v2"
 )
@@ -9,7 +10,8 @@ import (
 type Cache struct {
 	Map   *gabs.Container
 	mutex *sync.Mutex
-	tag   *string // who owns this
+	tag   *string     // who owns this
+	exp   *time.Timer // expiration timer
 }
 
 func New() *Cache {
