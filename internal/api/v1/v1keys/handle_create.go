@@ -32,7 +32,7 @@ func (req createKeysRequest) Validate() error { return nil }
 // @Failure 400 {object} v1errors.ErrorResponse "Bad request – invalid JSON or failed validation"
 // @Failure 409 {object} v1errors.ErrorResponse "Conflict – cache key already exists"
 // @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
-// @Router /api/v1/keys [post]
+// @Router /keys [post]
 func handleCreate() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()

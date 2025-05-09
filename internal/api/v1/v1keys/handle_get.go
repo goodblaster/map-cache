@@ -38,7 +38,7 @@ func (req getBatchRequest) Validate() error {
 // @Param key path string true "Key to retrieve"
 // @Success 200 {object} interface{} "Value for the given key"
 // @Failure 404 {object} v1errors.ErrorResponse "Key not found"
-// @Router /api/v1/keys/{key} [get]
+// @Router /keys/{key} [get]
 func handleGetValue() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
@@ -64,7 +64,7 @@ func handleGetValue() echo.HandlerFunc {
 // @Success 200 {object} map[string]interface{} "Map of keys to values"
 // @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
 // @Failure 404 {object} v1errors.ErrorResponse "One or more keys not found"
-// @Router /api/v1/keys/get [post]
+// @Router /keys/get [post]
 func handleGetBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)

@@ -35,7 +35,7 @@ func (req handlePutRequest) Validate() error {
 // @Success 200 {string} string "Value replaced successfully"
 // @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
 // @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
-// @Router /api/v1/keys/{key} [put]
+// @Router /keys/{key} [put]
 func handlePut() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
@@ -94,7 +94,7 @@ func (req replaceBatchRequest) Validate() error {
 // @Success 200 {string} string "Values replaced successfully"
 // @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
 // @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
-// @Router /api/v1/keys [put]
+// @Router /keys [put]
 func handleReplaceBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
