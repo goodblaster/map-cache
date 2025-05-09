@@ -12,7 +12,7 @@ func TestSetCacheExpiration(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Expire almost immediately
-	err = SetCacheExpiration("test", time.Millisecond)
+	err = SetCacheTTL("test", time.Millisecond)
 	assert.NoError(t, err)
 
 	// Sleep for a bit to let the expiration happen
@@ -28,11 +28,11 @@ func TestCacheExpirationChange(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Set expiration to 10 seconds
-	err = SetCacheExpiration("test", time.Second)
+	err = SetCacheTTL("test", time.Second)
 	assert.NoError(t, err)
 
 	// Change expiration to 1 millisecond
-	err = SetCacheExpiration("test", time.Millisecond)
+	err = SetCacheTTL("test", time.Millisecond)
 	assert.NoError(t, err)
 
 	// Sleep for a bit to let the expiration happen
@@ -48,7 +48,7 @@ func TestCancelCacheExpiration(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Set expiration to 10 seconds
-	err = SetCacheExpiration("test", time.Millisecond*100)
+	err = SetCacheTTL("test", time.Millisecond*50)
 	assert.NoError(t, err)
 
 	// Cancel the expiration
@@ -56,7 +56,7 @@ func TestCancelCacheExpiration(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Sleep for a bit to let the expiration happen (it shouldn't)
-	time.Sleep(time.Millisecond * 105)
+	time.Sleep(time.Millisecond * 55)
 
 	// Check if the cache is still there
 	cache, err := FetchCache("test")

@@ -389,6 +389,44 @@ const docTemplate = `{
             }
         },
         "/caches/{name}": {
+            "put": {
+                "description": "Updates the expiration time of a named cache. If no TTL is provided, it removes the expiration.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "caches"
+                ],
+                "summary": "Update cache expiration",
+                "parameters": [
+                    {
+                        "description": "Cache update payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateCacheRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid request or bad payload",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "Deletes a cache with the specified name.",
                 "produces": [
@@ -408,11 +446,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Deleted",
-                        "schema": {
-                            "type": "string"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Invalid cache name",
@@ -434,13 +469,13 @@ const docTemplate = `{
         "CreateCacheRequest": {
             "type": "object",
             "properties": {
-                "expiration": {
-                    "description": "Expiration duration for the cache in Go duration format (e.g., \"5m\", \"1h\").\nCurrently not implemented.",
-                    "type": "string"
-                },
                 "name": {
                     "description": "Name of the cache to create\nrequired: true",
                     "type": "string"
+                },
+                "ttl": {
+                    "description": "TTL for the cache in seconds",
+                    "type": "integer"
                 }
             }
         },
@@ -500,6 +535,15 @@ const docTemplate = `{
                     "description": "Map of keys to their new values\nrequired: true",
                     "type": "object",
                     "additionalProperties": {}
+                }
+            }
+        },
+        "UpdateCacheRequest": {
+            "type": "object",
+            "properties": {
+                "ttl": {
+                    "description": "TTL for the cache in seconds\nrequired: true",
+                    "type": "integer"
                 }
             }
         }

@@ -11,6 +11,9 @@ func SetupRoutes(group *echo.Group) {
 	// Create a cache
 	gCaches.POST("", handleCreateCache())
 
+	// Update cache expiration
+	gCaches.PUT("/:name", handleUpdateCache())
+
 	// Delete a cache
 	gCaches.DELETE("/:name", handleDeleteCache())
 }

@@ -15,7 +15,7 @@ import (
 // @Tags caches
 // @Produce json
 // @Param name path string true "Name of the cache to delete"
-// @Success 200 {string} string "Deleted"
+// @Success 204
 // @Failure 400 {object} v1errors.ErrorResponse "Invalid cache name"
 // @Failure 404 {object} v1errors.ErrorResponse "Cache not found"
 // @Router /caches/{name} [delete]

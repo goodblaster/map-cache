@@ -1,9 +1,19 @@
 package caches
 
-import "time"
+import (
+	"time"
 
-// SetCacheExpiration - set the expiration timer for the cache.
-func SetCacheExpiration(name string, after time.Duration) error {
+	"github.com/goodblaster/errors"
+)
+
+var ErrCannotExpireDefaultCache = errors.New("cannot set expiration for default cache")
+
+// SetCacheTTL - set the expiration timer for the cache.
+func SetCacheTTL(name string, after time.Duration) error {
+	if name == DefaultName {
+		return ErrCannotExpireDefaultCache
+	}
+
 	cache, err := FetchCache(name)
 	if err != nil {
 		return err
@@ -22,6 +32,10 @@ func SetCacheExpiration(name string, after time.Duration) error {
 
 // CancelCacheExpiration - cancel the expiration timer.
 func CancelCacheExpiration(name string) error {
+	if name == DefaultName {
+		return ErrCannotExpireDefaultCache
+	}
+
 	cache, err := FetchCache(name)
 	if err != nil {
 		return err
