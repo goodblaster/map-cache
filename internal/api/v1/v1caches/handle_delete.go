@@ -26,6 +26,7 @@ func handleDeleteCache() echo.HandlerFunc {
 			return v1errors.ApiError(c, http.StatusBadRequest, "missing cache name")
 		}
 
+		// Deleting the cache, will also clear the TTL timers.
 		err := caches.DeleteCache(name)
 		if err != nil {
 			return v1errors.ApiError(c, http.StatusNotFound, "could not find cache")

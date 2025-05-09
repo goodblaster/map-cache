@@ -44,9 +44,21 @@ func FetchCache(name string) (*Cache, error) {
 
 // DeleteCache - delete the cache.
 func DeleteCache(name string) error {
-	_, exists := caches.Load(name)
+	val, exists := caches.Load(name)
 	if !exists {
 		return ErrKeyNotFound.Format(name)
+	}
+
+	cache := val.(*Cache)
+
+	// Clear TTL timers for all keys.
+	for _, timer := range cache.keyExps {
+		timer.Stop()
+	}
+
+	// And the cache ttl
+	if cache.exp != nil {
+		cache.exp.Stop()
 	}
 
 	caches.Delete(name)

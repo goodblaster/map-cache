@@ -485,6 +485,12 @@ const docTemplate = `{
                 "entries": {
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "ttl": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -535,6 +541,13 @@ const docTemplate = `{
                     "description": "Map of keys to their new values\nrequired: true",
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "ttl": {
+                    "description": "Map of keys to their new TTLs (in seconds)\nrequired: false",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
                 }
             }
         },

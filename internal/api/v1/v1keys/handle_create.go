@@ -2,8 +2,10 @@ package v1keys
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/goodblaster/errors"
+	"github.com/goodblaster/logos"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
@@ -11,7 +13,8 @@ import (
 
 // createKeysRequest is the request body for creating new cache entries.
 type createKeysRequest struct {
-	Entries map[string]any `json:"entries"`
+	Entries map[string]any   `json:"entries"`
+	TTL     map[string]int64 `json:"ttl"`
 } // @name CreateKeysRequest
 
 // Validate - Validates the createKeysRequest.
@@ -32,6 +35,7 @@ func (req createKeysRequest) Validate() error { return nil }
 // @Router /api/v1/keys [post]
 func handleCreate() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		ctx := c.Request().Context()
 		var req createKeysRequest
 		if err := c.Bind(&req); err != nil {
 			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid json payload"))
@@ -42,11 +46,18 @@ func handleCreate() echo.HandlerFunc {
 		}
 
 		cache := Cache(c)
-		if err := cache.Create(c.Request().Context(), req.Entries); err != nil {
+		if err := cache.Create(ctx, req.Entries); err != nil {
 			if errors.Is(err, caches.ErrKeyAlreadyExists) {
 				return v1errors.ApiError(c, http.StatusConflict, errors.Wrap(err, "keys already exist"))
 			}
 			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "failed to create keys"))
+		}
+
+		// TTLs
+		for key, ttl := range req.TTL {
+			if err := cache.SetKeyTTL(ctx, key, time.Second*(time.Duration(ttl))); err != nil {
+				logos.WithError(err).Errorf("could not set cache expiration for key %q", key)
+			}
 		}
 
 		// Triggers?

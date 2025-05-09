@@ -2,8 +2,10 @@ package v1keys
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/goodblaster/errors"
+	"github.com/goodblaster/logos"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
 	"github.com/labstack/echo/v4"
 )
@@ -66,6 +68,10 @@ type replaceBatchRequest struct {
 	// Map of keys to their new values
 	// required: true
 	Entries map[string]any `json:"entries"`
+
+	// Map of keys to their new TTLs (in seconds)
+	// required: false
+	TTL map[string]*int64 `json:"ttl"`
 } // @name ReplaceBatchRequest
 
 func (req replaceBatchRequest) Validate() error {
@@ -103,6 +109,19 @@ func handleReplaceBatch() echo.HandlerFunc {
 
 		if err := cache.ReplaceBatch(c.Request().Context(), req.Entries); err != nil {
 			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not replace contents"))
+		}
+
+		// TTLs
+		for key, ttl := range req.TTL {
+			if ttl == nil {
+				if err := cache.CancelKeyTTL(c.Request().Context(), key); err != nil {
+					logos.WithError(err).Warnf("could not cancel cache expiration for key %q", key)
+				}
+				continue
+			}
+			if err := cache.SetKeyTTL(c.Request().Context(), key, time.Second*(time.Duration(*ttl))); err != nil {
+				logos.WithError(err).Warnf("could not set cache expiration for key %q", key)
+			}
 		}
 
 		// Triggers?
