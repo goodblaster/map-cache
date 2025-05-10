@@ -2,7 +2,6 @@ package v1keys
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/goodblaster/errors"
 	"github.com/goodblaster/logos"
@@ -119,7 +118,7 @@ func handleReplaceBatch() echo.HandlerFunc {
 				}
 				continue
 			}
-			if err := cache.SetKeyTTL(c.Request().Context(), key, time.Second*(time.Duration(*ttl))); err != nil {
+			if err := cache.SetKeyTTL(c.Request().Context(), key, *ttl); err != nil {
 				logos.WithError(err).Warnf("could not set cache expiration for key %q", key)
 			}
 		}

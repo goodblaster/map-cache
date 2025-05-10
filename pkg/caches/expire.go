@@ -2,11 +2,10 @@ package caches
 
 import (
 	"context"
-	"time"
 )
 
 // SetKeyTTL - set the expiration timer for a key.
-func (cache *Cache) SetKeyTTL(ctx context.Context, key string, after time.Duration) error {
+func (cache *Cache) SetKeyTTL(ctx context.Context, key string, seconds int64) error {
 	// Cancel existing timer if it exists.
 	timer, ok := cache.keyExps[key]
 	if ok {
@@ -15,7 +14,7 @@ func (cache *Cache) SetKeyTTL(ctx context.Context, key string, after time.Durati
 	}
 
 	// Create a new timer.
-	cache.keyExps[key] = time.AfterFunc(after, func() {
+	cache.keyExps[key] = FutureFunc(seconds, func() {
 		_ = cache.Delete(ctx, key)
 		delete(cache.keyExps, key)
 	})
