@@ -1,0 +1,384 @@
+basePath: /api/v1
+definitions:
+  CreateCacheRequest:
+    properties:
+      name:
+        description: |-
+          Name of the cache to create
+          required: true
+        type: string
+      ttl:
+        description: TTL for the cache in seconds
+        type: integer
+    type: object
+  CreateKeysRequest:
+    properties:
+      entries:
+        additionalProperties: {}
+        type: object
+      ttl:
+        additionalProperties:
+          type: integer
+        type: object
+    type: object
+  DeleteBatchRequest:
+    properties:
+      keys:
+        description: |-
+          List of keys to delete
+          required: true
+        items:
+          type: string
+        type: array
+    type: object
+  ErrorResponse:
+    properties:
+      message:
+        description: A human-readable message or structured error detail
+    type: object
+  GetBatchRequest:
+    properties:
+      keys:
+        description: |-
+          List of keys to retrieve
+          required: true
+        items:
+          type: string
+        type: array
+    type: object
+  HandlePutRequest:
+    properties:
+      value:
+        description: |-
+          New value to store for the key
+          required: true
+    type: object
+  ReplaceBatchRequest:
+    properties:
+      entries:
+        additionalProperties: {}
+        description: |-
+          Map of keys to their new values
+          required: true
+        type: object
+      ttl:
+        additionalProperties:
+          type: integer
+        description: |-
+          Map of keys to their new TTLs (in seconds)
+          required: false
+        type: object
+    type: object
+  UpdateCacheRequest:
+    properties:
+      ttl:
+        description: |-
+          TTL for the cache in seconds
+          required: true
+        type: integer
+    type: object
+info:
+  contact: {}
+  description: API for managing web cache keys
+  title: Web Cache API
+  version: "1.0"
+paths:
+  /caches:
+    get:
+      description: Returns a list of currently registered cache names.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of cache names
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List all caches
+      tags:
+      - caches
+    post:
+      consumes:
+      - application/json
+      description: Creates a new named cache. Optionally accepts expiration (not yet
+        implemented).
+      parameters:
+      - description: Cache creation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/CreateCacheRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Invalid request or bad payload
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create a new cache
+      tags:
+      - caches
+  /caches/{name}:
+    delete:
+      description: Deletes a cache with the specified name.
+      parameters:
+      - description: Name of the cache to delete
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid cache name
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Cache not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete a cache
+      tags:
+      - caches
+    put:
+      description: Updates the expiration time of a named cache. If no TTL is provided,
+        it removes the expiration.
+      parameters:
+      - description: Cache update payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateCacheRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid request or bad payload
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Update cache expiration
+      tags:
+      - caches
+  /keys:
+    post:
+      consumes:
+      - application/json
+      description: Creates one or more keys in the cache with values
+      parameters:
+      - description: Request body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/CreateKeysRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Bad request – invalid JSON or failed validation
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict – cache key already exists
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Create cache entries
+      tags:
+      - keys
+    put:
+      consumes:
+      - application/json
+      description: Replaces multiple entries in the cache
+      parameters:
+      - description: Map of key-value pairs to replace
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/ReplaceBatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Values replaced successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Replace multiple values
+      tags:
+      - keys
+  /keys/{key}:
+    delete:
+      description: Deletes a single key from the specified cache
+      parameters:
+      - description: Key to delete
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Key deleted successfully
+          schema:
+            type: string
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete a single key
+      tags:
+      - keys
+    get:
+      description: Retrieves the value associated with a single cache key
+      parameters:
+      - description: Key to retrieve
+        in: path
+        name: key
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Value for the given key
+          schema: {}
+        "404":
+          description: Key not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get a single value
+      tags:
+      - keys
+    put:
+      consumes:
+      - application/json
+      description: Replaces the value of a key in the cache
+      parameters:
+      - description: Key to update
+        in: path
+        name: key
+        required: true
+        type: string
+      - description: New value for the key
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/HandlePutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Value replaced successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Replace a single value
+      tags:
+      - keys
+  /keys/delete:
+    post:
+      consumes:
+      - application/json
+      description: Deletes multiple keys from the specified cache
+      parameters:
+      - description: List of keys to delete
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/DeleteBatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Keys deleted successfully
+          schema:
+            type: string
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Delete multiple keys
+      tags:
+      - keys
+  /keys/get:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves values for a list of cache keys
+      parameters:
+      - description: List of keys to retrieve
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/GetBatchRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Map of keys to values
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: One or more keys not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Get multiple values
+      tags:
+      - keys
+swagger: "2.0"

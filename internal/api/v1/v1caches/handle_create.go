@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/goodblaster/errors"
+	"github.com/goodblaster/logos"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
@@ -18,9 +19,8 @@ type createCacheRequest struct {
 	// required: true
 	Name string `json:"name"`
 
-	// Expiration duration for the cache in Go duration format (e.g., "5m", "1h").
-	// Currently not implemented.
-	Expiration *time.Time `json:"expiration,omitempty"`
+	// TTL for the cache in seconds
+	TTL *int64 `json:"ttl,omitempty"`
 } // @name CreateCacheRequest
 
 func (req createCacheRequest) Validate() error {
@@ -59,7 +59,12 @@ func handleCreateCache() echo.HandlerFunc {
 			return v1errors.ApiError(c, http.StatusInternalServerError, "failed to create cache")
 		}
 
-		// TODO: Handle expiration if implemented later
+		// Expiration
+		if req.TTL != nil {
+			if err := caches.SetCacheTTL(req.Name, time.Second*(time.Duration(*req.TTL))); err != nil {
+				logos.WithError(err).Error("could not set cache expiration")
+			}
+		}
 
 		return c.NoContent(http.StatusCreated)
 	}

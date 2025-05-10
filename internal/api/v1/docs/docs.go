@@ -15,7 +15,150 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/keys": {
+        "/caches": {
+            "get": {
+                "description": "Returns a list of currently registered cache names.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "caches"
+                ],
+                "summary": "List all caches",
+                "responses": {
+                    "200": {
+                        "description": "List of cache names",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new named cache. Optionally accepts expiration (not yet implemented).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "caches"
+                ],
+                "summary": "Create a new cache",
+                "parameters": [
+                    {
+                        "description": "Cache creation payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateCacheRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request or bad payload",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/caches/{name}": {
+            "put": {
+                "description": "Updates the expiration time of a named cache. If no TTL is provided, it removes the expiration.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "caches"
+                ],
+                "summary": "Update cache expiration",
+                "parameters": [
+                    {
+                        "description": "Cache update payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateCacheRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid request or bad payload",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a cache with the specified name.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "caches"
+                ],
+                "summary": "Delete a cache",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the cache to delete",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid cache name",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Cache not found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/keys": {
             "put": {
                 "description": "Replaces multiple entries in the cache",
                 "consumes": [
@@ -111,7 +254,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/keys/delete": {
+        "/keys/delete": {
             "post": {
                 "description": "Deletes multiple keys from the specified cache",
                 "consumes": [
@@ -157,7 +300,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/keys/get": {
+        "/keys/get": {
             "post": {
                 "description": "Retrieves values for a list of cache keys",
                 "consumes": [
@@ -204,7 +347,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/keys/{key}": {
+        "/keys/{key}": {
             "get": {
                 "description": "Retrieves the value associated with a single cache key",
                 "produces": [
@@ -320,127 +463,19 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/caches": {
-            "get": {
-                "description": "Returns a list of currently registered cache names.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "caches"
-                ],
-                "summary": "List all caches",
-                "responses": {
-                    "200": {
-                        "description": "List of cache names",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a new named cache. Optionally accepts expiration (not yet implemented).",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "caches"
-                ],
-                "summary": "Create a new cache",
-                "parameters": [
-                    {
-                        "description": "Cache creation payload",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/CreateCacheRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request or bad payload",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/caches/{name}": {
-            "delete": {
-                "description": "Deletes a cache with the specified name.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "caches"
-                ],
-                "summary": "Delete a cache",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Name of the cache to delete",
-                        "name": "name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Deleted",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid cache name",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Cache not found",
-                        "schema": {
-                            "$ref": "#/definitions/ErrorResponse"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
         "CreateCacheRequest": {
             "type": "object",
             "properties": {
-                "expiration": {
-                    "description": "Expiration duration for the cache in Go duration format (e.g., \"5m\", \"1h\").\nCurrently not implemented.",
-                    "type": "string"
-                },
                 "name": {
                     "description": "Name of the cache to create\nrequired: true",
                     "type": "string"
+                },
+                "ttl": {
+                    "description": "TTL for the cache in seconds",
+                    "type": "integer"
                 }
             }
         },
@@ -450,6 +485,12 @@ const docTemplate = `{
                 "entries": {
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "ttl": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -500,6 +541,22 @@ const docTemplate = `{
                     "description": "Map of keys to their new values\nrequired: true",
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "ttl": {
+                    "description": "Map of keys to their new TTLs (in seconds)\nrequired: false",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "UpdateCacheRequest": {
+            "type": "object",
+            "properties": {
+                "ttl": {
+                    "description": "TTL for the cache in seconds\nrequired: true",
+                    "type": "integer"
                 }
             }
         }

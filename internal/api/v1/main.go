@@ -1,6 +1,6 @@
 package v1
 
-//go:generate swag init --parseDependency --parseInternal --outputTypes json,go
+//go:generate swag init --parseDependency --parseInternal --outputTypes go,yaml
 
 // This main function exists only to make swaggo happy.
 //

@@ -39,7 +39,7 @@ func (req deleteBatchRequest) Validate() error {
 // @Param key path string true "Key to delete"
 // @Success 200 {string} string "Key deleted successfully"
 // @Failure 500 {object} v1errors.ErrorResponse "Server error"
-// @Router /api/v1/keys/{key} [delete]
+// @Router /keys/{key} [delete]
 func handleDelete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
@@ -64,7 +64,7 @@ func handleDelete() echo.HandlerFunc {
 // @Success 200 {string} string "Keys deleted successfully"
 // @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
 // @Failure 500 {object} v1errors.ErrorResponse "Server error"
-// @Router /api/v1/keys/delete [post]
+// @Router /keys/delete [post]
 func handleDeleteBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)

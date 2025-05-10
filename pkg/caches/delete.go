@@ -3,6 +3,7 @@ package caches
 import (
 	"context"
 	"strconv"
+	"strings"
 )
 
 func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
@@ -16,6 +17,14 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 			if i, err := strconv.Atoi(lastStr); err == nil {
 				_ = cache.Map.ArrayRemove(i, path[:len(path)-1]...)
 				continue
+			}
+		}
+
+		// Clear any TTLs that start with this key.
+		for k, timer := range cache.keyExps {
+			if strings.HasPrefix(k, key) {
+				timer.Stop()
+				delete(cache.keyExps, k)
 			}
 		}
 

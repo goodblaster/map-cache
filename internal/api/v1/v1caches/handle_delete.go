@@ -15,7 +15,7 @@ import (
 // @Tags caches
 // @Produce json
 // @Param name path string true "Name of the cache to delete"
-// @Success 200 {string} string "Deleted"
+// @Success 204
 // @Failure 400 {object} v1errors.ErrorResponse "Invalid cache name"
 // @Failure 404 {object} v1errors.ErrorResponse "Cache not found"
 // @Router /caches/{name} [delete]
@@ -26,6 +26,7 @@ func handleDeleteCache() echo.HandlerFunc {
 			return v1errors.ApiError(c, http.StatusBadRequest, "missing cache name")
 		}
 
+		// Deleting the cache, will also clear the TTL timers.
 		err := caches.DeleteCache(name)
 		if err != nil {
 			return v1errors.ApiError(c, http.StatusNotFound, "could not find cache")
