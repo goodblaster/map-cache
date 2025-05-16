@@ -61,7 +61,7 @@ func handleGetValue() echo.HandlerFunc {
 // @Accept json
 // @Produce json
 // @Param body body getBatchRequest true "List of keys to retrieve"
-// @Success 200 {object} map[string]interface{} "cmap of keys to values"
+// @Success 200 {object} map[string]interface{} "Map of keys to values"
 // @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
 // @Failure 404 {object} v1errors.ErrorResponse "One or more keys not found"
 // @Router /keys/get [post]
