@@ -7,7 +7,7 @@ import (
 var ErrCannotExpireDefaultCache = errors.New("cannot set expiration for default cache")
 
 // SetCacheTTL - set the expiration timer for the cache.
-func SetCacheTTL(name string, seconds int64) error {
+func SetCacheTTL(name string, milliseconds int64) error {
 	if name == DefaultName {
 		return ErrCannotExpireDefaultCache
 	}
@@ -21,7 +21,7 @@ func SetCacheTTL(name string, seconds int64) error {
 		cache.exp.Stop()
 	}
 
-	cache.exp = FutureFunc(seconds, func() {
+	cache.exp = FutureFunc(milliseconds, func() {
 		caches.Delete(name)
 	})
 
