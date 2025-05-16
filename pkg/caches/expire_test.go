@@ -22,7 +22,7 @@ func TestSetKeyExpiration(t *testing.T) {
 	assert.EqualValues(t, "value", val)
 
 	// Set brief expiration
-	err = cache.SetKeyTTL(ctx, "test", time.Millisecond*1)
+	err = cache.SetKeyTTL(ctx, "test", 1)
 
 	// Sleep for a bit to let the expiration happen
 	time.Sleep(time.Millisecond * 5)
@@ -48,7 +48,7 @@ func TestSetKeyExpirationNested(t *testing.T) {
 	assert.EqualValues(t, "value", val)
 
 	// Set brief expiration
-	err = cache.SetKeyTTL(ctx, "test/nested", time.Millisecond*1)
+	err = cache.SetKeyTTL(ctx, "test/nested", 1)
 
 	// Sleep for a bit to let the expiration happen
 	time.Sleep(time.Millisecond * 5)
@@ -71,15 +71,15 @@ func TestKeyExpirationChange(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Set expiration to 10 seconds
-	err = cache.SetKeyTTL(ctx, "test", time.Second*10)
+	err = cache.SetKeyTTL(ctx, "test", 10_000)
 	assert.NoError(t, err)
 
 	// Change expiration to millisecond
-	err = cache.SetKeyTTL(ctx, "test", time.Millisecond*1)
+	err = cache.SetKeyTTL(ctx, "test", 1)
 	assert.NoError(t, err)
 
 	// Sleep for a bit to let the expiration happen
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Millisecond * 5)
 
 	// Check if the cache is expired
 	_, err = cache.Get(ctx, "test")
@@ -95,7 +95,7 @@ func TestKeyExpirationCancel(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Set short expiration
-	err = cache.SetKeyTTL(ctx, "test", time.Millisecond*50)
+	err = cache.SetKeyTTL(ctx, "test", 50)
 	assert.NoError(t, err)
 
 	// Cancel expiration

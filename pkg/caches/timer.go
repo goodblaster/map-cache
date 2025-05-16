@@ -2,8 +2,8 @@ package caches
 
 import "time"
 
-func FutureFunc(seconds int64, f func()) *Timer {
-	future := time.Now().Add(time.Duration(seconds) * time.Second)
+func FutureFunc(milliseconds int64, f func()) *Timer {
+	future := time.Now().Add(time.Duration(milliseconds) * time.Millisecond)
 	return &Timer{
 		Expiration: future.Unix(),
 		timer:      time.AfterFunc(time.Until(future), f),
