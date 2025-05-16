@@ -3,8 +3,8 @@ package caches
 import (
 	"sync"
 
-	"github.com/Jeffail/gabs/v2"
 	"github.com/goodblaster/errors"
+	"github.com/goodblaster/map-cache/pkg/containers"
 )
 
 var caches = sync.Map{}
@@ -89,5 +89,5 @@ func (cache *Cache) Release(tag string) {
 
 // Clear - Clear the cache. Must already be acquired.
 func (cache *Cache) Clear() {
-	cache.Map = gabs.New()
+	cache.cmap = containers.NewGabsMap()
 }

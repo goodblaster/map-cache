@@ -6,12 +6,7 @@ import (
 
 // Get - Get one specific value from the cache.
 func (cache *Cache) Get(ctx context.Context, key string) (any, error) {
-	c := cache.Map.Search(SplitKey(key)...)
-	if c == nil {
-		return nil, ErrKeyNotFound.Format(key)
-	}
-
-	return c.Data(), nil
+	return cache.cmap.Get(ctx, SplitKey(key)...)
 }
 
 // BatchGet - BatchGet values from the cache.
@@ -19,11 +14,11 @@ func (cache *Cache) BatchGet(ctx context.Context, keys ...string) (map[string]an
 	vals := map[string]any{}
 
 	for _, key := range keys {
-		c := cache.Map.Search(SplitKey(key)...)
-		if c == nil {
+		val, err := cache.Get(ctx, key)
+		if err != nil {
 			continue // todo error on an failure? return what we CAN find?
 		}
-		vals[key] = c.Data()
+		vals[key] = val
 	}
 
 	return vals, nil
