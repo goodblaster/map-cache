@@ -2,7 +2,6 @@ package v1caches
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/goodblaster/errors"
 	"github.com/goodblaster/logos"
@@ -61,7 +60,7 @@ func handleCreateCache() echo.HandlerFunc {
 
 		// Expiration
 		if req.TTL != nil {
-			if err := caches.SetCacheTTL(req.Name, time.Second*(time.Duration(*req.TTL))); err != nil {
+			if err := caches.SetCacheTTL(req.Name, *req.TTL); err != nil {
 				logos.WithError(err).Error("could not set cache expiration")
 			}
 		}

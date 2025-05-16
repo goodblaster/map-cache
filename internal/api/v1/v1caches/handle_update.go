@@ -2,7 +2,6 @@ package v1caches
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
@@ -48,8 +47,7 @@ func handleUpdateCache() echo.HandlerFunc {
 
 		if input.TTL != nil {
 			// Update the cache expiration
-			duration := time.Duration(*input.TTL) * time.Second
-			err := caches.SetCacheTTL(cacheName, duration)
+			err := caches.SetCacheTTL(cacheName, *input.TTL)
 			if err != nil {
 				return v1errors.ApiError(c, http.StatusInternalServerError, "failed to update cache")
 			}
