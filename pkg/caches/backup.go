@@ -46,7 +46,7 @@ func Backup(ctx context.Context, cacheName string, outFile string) error {
 
 	backup := BackupContainer{
 		Name:           cacheName,
-		Data:           cache.Map.Data().(map[string]any),
+		Data:           cache.cmap.Data(ctx),
 		KeyExpirations: keysTTLs,
 	}
 

@@ -3,11 +3,11 @@ package caches
 import (
 	"sync"
 
-	"github.com/Jeffail/gabs/v2"
+	"github.com/goodblaster/map-cache/pkg/containers"
 )
 
 type Cache struct {
-	Map     *gabs.Container
+	cmap    containers.Map
 	mutex   *sync.Mutex
 	tag     *string           // who owns this
 	exp     *Timer            // expiration timer
@@ -16,7 +16,7 @@ type Cache struct {
 
 func New() *Cache {
 	return &Cache{
-		Map:     gabs.New(),
+		cmap:    containers.NewGabsMap(),
 		mutex:   &sync.Mutex{},
 		keyExps: map[string]*Timer{},
 	}

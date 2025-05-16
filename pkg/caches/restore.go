@@ -31,8 +31,7 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 	}
 
 	cache := New()
-	_, err = cache.Map.Set(backup.Data)
-	if err != nil {
+	if err = cache.cmap.Set(ctx, backup.Data); err != nil {
 		return errors.Wrapf(err, "error setting data in cache %q", cacheName)
 	}
 

@@ -15,7 +15,7 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 		if len(path) > 1 {
 			lastStr := path[len(path)-1]
 			if i, err := strconv.Atoi(lastStr); err == nil {
-				_ = cache.Map.ArrayRemove(i, path[:len(path)-1]...)
+				_ = cache.cmap.ArrayRemove(ctx, i, path[:len(path)-1]...)
 				continue
 			}
 		}
@@ -28,7 +28,7 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 			}
 		}
 
-		_ = cache.Map.Delete(path...)
+		_ = cache.cmap.Delete(ctx, path...)
 	}
 	return nil
 }

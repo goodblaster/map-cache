@@ -17,15 +17,14 @@ func (cache *Cache) Create(ctx context.Context, entries map[string]any) error {
 			return ErrSinglePathKeyRequired.Format(key)
 		}
 
-		if cache.Map.Exists(path[0]) {
+		if cache.cmap.Exists(ctx, path[0]) {
 			return ErrKeyAlreadyExists.Format(path)
 		}
 	}
 
 	// Now set the entries.
 	for key, value := range entries {
-		_, err := cache.Map.Set(value, SplitKey(key)...)
-		if err != nil {
+		if err := cache.cmap.Set(ctx, value, SplitKey(key)...); err != nil {
 			return errors.Wrap(err, "could not set value")
 		}
 	}
