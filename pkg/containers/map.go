@@ -10,4 +10,5 @@ type Map interface {
 	ArrayRemove(ctx context.Context, index int, path ...string) error
 	Exists(ctx context.Context, hierarchy ...string) bool
 	Data(ctx context.Context) map[string]any
+	WildKeys(ctx context.Context, path string) []string
 }
