@@ -6,16 +6,20 @@ import (
 )
 
 type CommandGet struct {
-	keys []string
+	Keys []string `json:"keys,required"`
+}
+
+func (CommandGet) Type() string {
+	return "GET"
 }
 
 func GET(keys ...string) Command {
-	return CommandGet{keys: keys}
+	return CommandGet{Keys: keys}
 }
 
 func (p CommandGet) Do(ctx context.Context, cache *Cache) CmdResult {
 	var res CmdResult
-	for _, key := range p.keys {
+	for _, key := range p.Keys {
 		values := map[string]any{}
 		if !strings.Contains(key, "*") {
 			v, err := cache.Get(ctx, key)

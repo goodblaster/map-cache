@@ -9,16 +9,20 @@ import (
 )
 
 type CommandPrint struct {
-	msgs []string
+	Messages []string `json:"messages,required"`
+}
+
+func (CommandPrint) Type() string {
+	return "PRINT"
 }
 
 func PRINT(msgs ...string) Command {
-	return CommandPrint{msgs: msgs}
+	return CommandPrint{Messages: msgs}
 }
 
 func (p CommandPrint) Do(ctx context.Context, cache *Cache) CmdResult {
 	var res CmdResult
-	for _, msg := range p.msgs {
+	for _, msg := range p.Messages {
 		msg, keys := ExtractAndReplaceParams(msg)
 		var params []any
 

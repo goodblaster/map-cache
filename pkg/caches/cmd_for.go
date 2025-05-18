@@ -2,27 +2,31 @@ package caches
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 )
 
 type CommandFor struct {
-	loopExpr string
-	cmds     []Command
+	LoopExpr string    `json:"loop_expr,required"`
+	Commands []Command `json:"commands,required"`
 }
 
-// todo: commandS
+func (CommandFor) Type() string {
+	return "FOR"
+}
+
 func FOR(loopExpr string, cmds ...Command) Command {
-	return CommandFor{loopExpr: loopExpr, cmds: cmds}
+	return CommandFor{LoopExpr: loopExpr, Commands: cmds}
 }
 
 func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 	// Extract pattern like ${{job-1234/domains/*/countdown}}
 	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	match := re.FindStringSubmatch(f.loopExpr)
+	match := re.FindStringSubmatch(f.LoopExpr)
 	if len(match) < 2 {
-		return CmdResult{Error: fmt.Errorf("invalid FOR expression: %s", f.loopExpr)}
+		return CmdResult{Error: fmt.Errorf("invalid FOR expression: %s", f.LoopExpr)}
 	}
 
 	keyPattern := strings.TrimSpace(match[1])
@@ -49,7 +53,7 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 			continue
 		}
 
-		for _, cmd := range f.cmds {
+		for _, cmd := range f.Commands {
 			// Replace ${{1}}, ${{2}}, ... with the captured fragments
 			transformed := transformCommand(cmd, submatches[1:])
 
@@ -75,25 +79,25 @@ func transformCommand(cmd Command, captures []string) Command {
 	switch c := cmd.(type) {
 	case CommandIf:
 		return CommandIf{
-			condition: substituteCaptures(c.condition, captures),
-			ifTrue:    transformCommand(c.ifTrue, captures),
-			ifFalse:   transformCommand(c.ifFalse, captures),
+			Condition: substituteCaptures(c.Condition, captures),
+			IfTrue:    transformCommand(c.IfTrue, captures),
+			IfFalse:   transformCommand(c.IfFalse, captures),
 		}
 	case CommandGet:
-		keys := make([]string, len(c.keys))
-		for i, k := range c.keys {
+		keys := make([]string, len(c.Keys))
+		for i, k := range c.Keys {
 			keys[i] = substituteCaptures(k, captures)
 		}
-		return CommandGet{keys: keys}
+		return CommandGet{Keys: keys}
 	case CommandReplace:
 		return CommandReplace{
-			key: substituteCaptures(c.key, captures),
-			val: c.val,
+			Key:   substituteCaptures(c.Key, captures),
+			Value: c.Value,
 		}
 	case CommandInc:
 		return CommandInc{
-			key: substituteCaptures(c.key, captures),
-			val: c.val,
+			Key:   substituteCaptures(c.Key, captures),
+			Value: c.Value,
 		}
 	default:
 		return cmd // unknown command type
@@ -106,4 +110,28 @@ func substituteCaptures(s string, captures []string) string {
 		s = strings.ReplaceAll(s, placeholder, val)
 	}
 	return s
+}
+
+func (c *CommandFor) UnmarshalJSON(data []byte) error {
+	type Alias CommandFor
+	aux := struct {
+		Commands []json.RawMessage `json:"commands"`
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	for _, cmdData := range aux.Commands {
+		var rc RawCommand
+		if err := json.Unmarshal(cmdData, &rc); err != nil {
+			return err
+		}
+		c.Commands = append(c.Commands, rc.Command)
+	}
+
+	return nil
 }

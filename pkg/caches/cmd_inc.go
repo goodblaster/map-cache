@@ -8,18 +8,22 @@ import (
 )
 
 type CommandInc struct {
-	key string
-	val float64
+	Key   string  `json:"key,required"`
+	Value float64 `json:"value,required"`
+}
+
+func (CommandInc) Type() string {
+	return "INC"
 }
 
 func INC(key string, value float64) Command {
-	return CommandInc{key: key, val: value}
+	return CommandInc{Key: key, Value: value}
 }
 
 func (p CommandInc) Do(ctx context.Context, cache *Cache) CmdResult {
-	v, err := cache.Get(ctx, p.key)
+	v, err := cache.Get(ctx, p.Key)
 	if err != nil {
-		return CmdResult{Error: ErrKeyNotFound.Format(p.key)}
+		return CmdResult{Error: ErrKeyNotFound.Format(p.Key)}
 	}
 
 	f64, ok := ToFloat64(v)
@@ -27,8 +31,8 @@ func (p CommandInc) Do(ctx context.Context, cache *Cache) CmdResult {
 		return CmdResult{Error: errors.New("not a number")}
 	}
 
-	f64 += p.val
-	return CmdResult{Error: cache.Replace(ctx, p.key, f64)}
+	f64 += p.Value
+	return CmdResult{Error: cache.Replace(ctx, p.Key, f64)}
 }
 
 func ToFloat64(v any) (float64, bool) {

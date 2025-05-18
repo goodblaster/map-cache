@@ -11,10 +11,15 @@ type CmdResult struct {
 
 type Command interface {
 	Do(ctx context.Context, cache *Cache) CmdResult
+	Type() string
 }
 
 type CommandGroup struct {
 	actions []Command
+}
+
+func (CommandGroup) Type() string {
+	return "COMMANDS"
 }
 
 func COMMANDS(actions ...Command) Command {

@@ -8,17 +8,21 @@ import (
 )
 
 type CommandReturn struct {
-	values []any
+	Values []any `json:"values,required"`
+}
+
+func (CommandReturn) Type() string {
+	return "RETURN"
 }
 
 func RETURN(values ...any) Command {
-	return CommandReturn{values: values}
+	return CommandReturn{Values: values}
 }
 
 func (p CommandReturn) Do(ctx context.Context, cache *Cache) CmdResult {
-	resolved := make([]any, len(p.values))
+	resolved := make([]any, len(p.Values))
 
-	for i, val := range p.values {
+	for i, val := range p.Values {
 		switch str := val.(type) {
 		case string:
 			resolvedStr, err := evaluateInterpolations(str, cache, ctx)

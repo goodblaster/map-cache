@@ -2,6 +2,7 @@ package caches
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,18 +11,22 @@ import (
 )
 
 type CommandIf struct {
-	condition string
-	ifTrue    Command
-	ifFalse   Command
+	Condition string  `json:"condition,required"`
+	IfTrue    Command `json:"if_true,required"`
+	IfFalse   Command `json:"if_false,required"`
+}
+
+func (CommandIf) Type() string {
+	return "IF"
 }
 
 func IF(condition string, ifTrue, ifFalse Command) Command {
-	return CommandIf{condition: condition, ifTrue: ifTrue, ifFalse: ifFalse}
+	return CommandIf{Condition: condition, IfTrue: ifTrue, IfFalse: ifFalse}
 }
 
 func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 	parameters := map[string]any{}
-	conditionExpr := p.condition
+	conditionExpr := p.Condition
 
 	// Handle any(...) or all(...) first
 	conditionExpr, err := expandAnyAll(conditionExpr, cache, parameters, ctx)
@@ -61,9 +66,9 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 	}
 
 	if isTrue {
-		return p.ifTrue.Do(ctx, cache)
+		return p.IfTrue.Do(ctx, cache)
 	}
-	return p.ifFalse.Do(ctx, cache)
+	return p.IfFalse.Do(ctx, cache)
 }
 
 func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx context.Context) (string, error) {
@@ -106,4 +111,35 @@ func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx cont
 func keyToIdentifier(key string) string {
 	replacer := strings.NewReplacer(".", "_", "/", "_", "-", "_")
 	return replacer.Replace(key)
+}
+
+func (c *CommandIf) UnmarshalJSON(data []byte) error {
+	// Define an alias to avoid infinite recursion
+	type Alias CommandIf
+	aux := struct {
+		IfTrue  json.RawMessage `json:"if_true"`
+		IfFalse json.RawMessage `json:"if_false"`
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Use your existing RawCommand logic
+	var ifTrue RawCommand
+	if err := json.Unmarshal(aux.IfTrue, &ifTrue); err != nil {
+		return err
+	}
+	c.IfTrue = ifTrue.Command
+
+	var ifFalse RawCommand
+	if err := json.Unmarshal(aux.IfFalse, &ifFalse); err != nil {
+		return err
+	}
+	c.IfFalse = ifFalse.Command
+
+	return nil
 }

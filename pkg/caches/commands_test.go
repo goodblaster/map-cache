@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBasicTrigger(t *testing.T) {
+func TestComplexCommand(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
 
