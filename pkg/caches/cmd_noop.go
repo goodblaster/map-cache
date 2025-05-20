@@ -6,8 +6,8 @@ import (
 
 type CommandNoop struct{}
 
-func (CommandNoop) Type() string {
-	return "NOOP"
+func (CommandNoop) Type() CommandType {
+	return CommandTypeNoop
 }
 
 func NOOP() Command {

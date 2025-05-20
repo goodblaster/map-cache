@@ -7,8 +7,8 @@ type CommandReplace struct {
 	Value any    `json:"value,required"`
 }
 
-func (CommandReplace) Type() string {
-	return "REPLACE"
+func (CommandReplace) Type() CommandType {
+	return CommandTypeReplace
 }
 
 func REPLACE(key string, value any) Command {

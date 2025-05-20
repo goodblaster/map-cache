@@ -12,8 +12,8 @@ type CommandInc struct {
 	Value float64 `json:"value,required"`
 }
 
-func (CommandInc) Type() string {
-	return "INC"
+func (CommandInc) Type() CommandType {
+	return CommandTypeInc
 }
 
 func INC(key string, value float64) Command {

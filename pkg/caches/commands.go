@@ -11,15 +11,30 @@ type CmdResult struct {
 
 type Command interface {
 	Do(ctx context.Context, cache *Cache) CmdResult
-	Type() string
+	Type() CommandType
+	MarshalJSON() ([]byte, error)
 }
 
 type CommandGroup struct {
 	actions []Command
 }
 
-func (CommandGroup) Type() string {
-	return "COMMANDS"
+type CommandType string
+
+const (
+	CommandTypeIf      CommandType = "IF"
+	CommandTypeFor     CommandType = "FOR"
+	CommandTypeReplace CommandType = "REPLACE"
+	CommandTypeReturn  CommandType = "RETURN"
+	CommandTypePrint   CommandType = "PRINT"
+	CommandTypeGet     CommandType = "GET"
+	CommandTypeInc     CommandType = "INC"
+	CommandTypeNoop    CommandType = "NOOP"
+	CommandTypeGroup   CommandType = "COMMANDS"
+)
+
+func (CommandGroup) Type() CommandType {
+	return CommandTypeGroup
 }
 
 func COMMANDS(actions ...Command) Command {

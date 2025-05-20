@@ -12,8 +12,8 @@ type CommandPrint struct {
 	Messages []string `json:"messages,required"`
 }
 
-func (CommandPrint) Type() string {
-	return "PRINT"
+func (CommandPrint) Type() CommandType {
+	return CommandTypePrint
 }
 
 func PRINT(msgs ...string) Command {

@@ -9,8 +9,8 @@ type CommandGet struct {
 	Keys []string `json:"keys,required"`
 }
 
-func (CommandGet) Type() string {
-	return "GET"
+func (CommandGet) Type() CommandType {
+	return CommandTypeGet
 }
 
 func GET(keys ...string) Command {

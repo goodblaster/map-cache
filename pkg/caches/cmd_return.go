@@ -11,8 +11,8 @@ type CommandReturn struct {
 	Values []any `json:"values,required"`
 }
 
-func (CommandReturn) Type() string {
-	return "RETURN"
+func (CommandReturn) Type() CommandType {
+	return CommandTypeReturn
 }
 
 func RETURN(values ...any) Command {

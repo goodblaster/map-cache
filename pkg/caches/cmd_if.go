@@ -16,8 +16,8 @@ type CommandIf struct {
 	IfFalse   Command `json:"if_false,required"`
 }
 
-func (CommandIf) Type() string {
-	return "IF"
+func (CommandIf) Type() CommandType {
+	return CommandTypeIf
 }
 
 func IF(condition string, ifTrue, ifFalse Command) Command {

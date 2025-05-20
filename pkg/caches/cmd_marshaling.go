@@ -24,7 +24,7 @@ func (r RawCommand) MarshalJSON() ([]byte, error) {
 
 func (r *RawCommand) UnmarshalJSON(data []byte) error {
 	var base struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 	}
 	if err := json.Unmarshal(data, &base); err != nil {
 		return err
@@ -32,23 +32,23 @@ func (r *RawCommand) UnmarshalJSON(data []byte) error {
 
 	var cmd Command
 	switch base.Type {
-	case "IF":
+	case CommandTypeIf:
 		cmd = &CommandIf{}
-	case "FOR":
+	case CommandTypeFor:
 		cmd = &CommandFor{}
-	case "REPLACE":
+	case CommandTypeReplace:
 		cmd = &CommandReplace{}
-	case "RETURN":
+	case CommandTypeReturn:
 		cmd = &CommandReturn{}
-	case "PRINT":
+	case CommandTypePrint:
 		cmd = &CommandPrint{}
-	case "GET":
+	case CommandTypeGet:
 		cmd = &CommandGet{}
-	case "INC":
+	case CommandTypeInc:
 		cmd = &CommandInc{}
-	case "NOOP":
+	case CommandTypeNoop:
 		cmd = &CommandNoop{}
-	case "COMMANDS":
+	case CommandTypeGroup:
 		cmd = &CommandGroup{}
 	default:
 		return fmt.Errorf("unknown command type: %s", base.Type)
@@ -68,101 +68,101 @@ func (r *RawCommand) UnmarshalJSON(data []byte) error {
 ////
 /////
 
-func (c *CommandIf) MarshalJSON() ([]byte, error) {
+func (c CommandIf) MarshalJSON() ([]byte, error) {
 	type Alias CommandIf
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }
 
-func (c *CommandFor) MarshalJSON() ([]byte, error) {
+func (c CommandFor) MarshalJSON() ([]byte, error) {
 	type Alias CommandFor
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }
 
-func (c *CommandReplace) MarshalJSON() ([]byte, error) {
+func (c CommandReplace) MarshalJSON() ([]byte, error) {
 	type Alias CommandReplace
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }
 
-func (c *CommandReturn) MarshalJSON() ([]byte, error) {
+func (c CommandReturn) MarshalJSON() ([]byte, error) {
 	type Alias CommandReturn
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }
 
-func (c *CommandPrint) MarshalJSON() ([]byte, error) {
+func (c CommandPrint) MarshalJSON() ([]byte, error) {
 	type Alias CommandPrint
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }
 
-func (c *CommandGet) MarshalJSON() ([]byte, error) {
+func (c CommandGet) MarshalJSON() ([]byte, error) {
 	type Alias CommandGet
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }
 
-func (c *CommandInc) MarshalJSON() ([]byte, error) {
+func (c CommandInc) MarshalJSON() ([]byte, error) {
 	type Alias CommandInc
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }
 
-func (c *CommandNoop) MarshalJSON() ([]byte, error) {
+func (c CommandNoop) MarshalJSON() ([]byte, error) {
 	type Alias CommandNoop
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }
 
-func (c *CommandGroup) MarshalJSON() ([]byte, error) {
+func (c CommandGroup) MarshalJSON() ([]byte, error) {
 	type Alias CommandGroup
 	return json.Marshal(struct {
-		Type string `json:"type"`
+		Type CommandType `json:"type"`
 		*Alias
 	}{
 		Type:  c.Type(),
-		Alias: (*Alias)(c),
+		Alias: (*Alias)(&c),
 	})
 }

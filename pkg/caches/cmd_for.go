@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -13,8 +14,8 @@ type CommandFor struct {
 	Commands []Command `json:"commands,required"`
 }
 
-func (CommandFor) Type() string {
-	return "FOR"
+func (CommandFor) Type() CommandType {
+	return CommandTypeFor
 }
 
 func FOR(loopExpr string, cmds ...Command) Command {
@@ -76,9 +77,20 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 }
 
 func transformCommand(cmd Command, captures []string) Command {
+	if cmd == nil {
+		return nil
+	}
+
+	// Convert pointer to value if needed
+	val := reflect.ValueOf(cmd)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+		cmd = val.Interface().(Command)
+	}
+
 	switch c := cmd.(type) {
 	case CommandIf:
-		return CommandIf{
+		return &CommandIf{
 			Condition: substituteCaptures(c.Condition, captures),
 			IfTrue:    transformCommand(c.IfTrue, captures),
 			IfFalse:   transformCommand(c.IfFalse, captures),
@@ -88,19 +100,19 @@ func transformCommand(cmd Command, captures []string) Command {
 		for i, k := range c.Keys {
 			keys[i] = substituteCaptures(k, captures)
 		}
-		return CommandGet{Keys: keys}
+		return &CommandGet{Keys: keys}
 	case CommandReplace:
-		return CommandReplace{
+		return &CommandReplace{
 			Key:   substituteCaptures(c.Key, captures),
 			Value: c.Value,
 		}
 	case CommandInc:
-		return CommandInc{
+		return &CommandInc{
 			Key:   substituteCaptures(c.Key, captures),
 			Value: c.Value,
 		}
 	default:
-		return cmd // unknown command type
+		return cmd
 	}
 }
 
