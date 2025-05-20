@@ -10,7 +10,7 @@ import (
 
 type commandRequest struct {
 	Commands []caches.RawCommand `json:"commands"`
-} // @name CommandRequest
+}
 
 func (req commandRequest) Validate() error {
 	return nil

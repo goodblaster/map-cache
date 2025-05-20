@@ -11,16 +11,10 @@ import (
 )
 
 // createCacheRequest represents the payload for creating a cache.
-//
-// swagger:model createCacheRequest
 type createCacheRequest struct {
-	// Name of the cache to create
-	// required: true
-	Name string `json:"name"`
-
-	// TTL for the cache in seconds
-	TTL *int64 `json:"ttl,omitempty"`
-} // @name CreateCacheRequest
+	Name string `json:"name,required"`
+	TTL  *int64 `json:"ttl,omitempty"` // millisecond
+}
 
 func (req createCacheRequest) Validate() error {
 	if req.Name == "" {
@@ -31,17 +25,6 @@ func (req createCacheRequest) Validate() error {
 }
 
 // handleCreateCache creates a new cache.
-//
-// @Summary Create a new cache
-// @Description Creates a new named cache. Optionally accepts expiration (not yet implemented).
-// @Tags caches
-// @Accept json
-// @Produce json
-// @Param body body createCacheRequest true "Cache creation payload"
-// @Success 201 {string} string "Created"
-// @Failure 400 {object} v1errors.ErrorResponse "Invalid request or bad payload"
-// @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
-// @Router /caches [post]
 func handleCreateCache() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req createCacheRequest

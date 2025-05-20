@@ -13,25 +13,13 @@ import (
 // createKeysRequest is the request body for creating new cache entries.
 type createKeysRequest struct {
 	Entries map[string]any   `json:"entries"`
-	TTL     map[string]int64 `json:"ttl"`
-} // @name CreateKeysRequest
+	TTL     map[string]int64 `json:"ttl"` // milliseconds
+}
 
 // Validate - Validates the createKeysRequest.
 func (req createKeysRequest) Validate() error { return nil }
 
 // handleCreate creates new entries in a cache.
-//
-// @Summary Create cache entries
-// @Description Creates one or more keys in the cache with values
-// @Tags keys
-// @Accept json
-// @Produce json
-// @Param  body  body  createKeysRequest  true  "Request body"
-// @Success 201 {string} string "Created"
-// @Failure 400 {object} v1errors.ErrorResponse "Bad request – invalid JSON or failed validation"
-// @Failure 409 {object} v1errors.ErrorResponse "Conflict – cache key already exists"
-// @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
-// @Router /keys [post]
 func handleCreate() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()

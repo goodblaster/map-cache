@@ -1,0 +1,611 @@
+openapi: 3.0.0
+info:
+  title: Web Cache API
+  version: "1.0"
+  description: API for managing web cache keys
+paths:
+  /api/v1/caches:
+    get:
+      summary: List all caches
+      description: Returns a list of currently registered cache names.
+      tags: [caches]
+      responses:
+        "200":
+          description: List of cache names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    post:
+      summary: Create a new cache
+      description: Creates a new named cache. Optionally accepts expiration (not yet implemented).
+      tags: [caches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCacheRequest'
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid request or bad payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/caches/{name}:
+    delete:
+      summary: Delete a cache
+      description: Deletes a cache with the specified name.
+      tags: [caches]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the cache to delete
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid cache name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Cache not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update cache expiration
+      description: Updates the expiration time of a named cache. If no TTL is provided, it removes the expiration.
+      tags: [caches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCacheRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid request or bad payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/keys:
+    post:
+      summary: Create cache entries
+      description: Creates one or more keys in the cache with values
+      tags: [keys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKeysRequest'
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Bad request – invalid JSON or failed validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Conflict – cache key already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Replace multiple values
+      description: Replaces multiple entries in the cache
+      tags: [keys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceBatchRequest'
+      responses:
+        "200":
+          description: Values replaced successfully
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/keys/{key}:
+    get:
+      summary: Get a single value
+      description: Retrieves the value associated with a single cache key
+      tags: [keys]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Key to retrieve
+      responses:
+        "200":
+          description: Value for the given key
+          content:
+            application/json:
+              schema: {}
+        "404":
+          description: Key not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Replace a single value
+      description: Replaces the value of a key in the cache
+      tags: [keys]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Key to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandlePutRequest'
+      responses:
+        "200":
+          description: Value replaced successfully
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a single key
+      description: Deletes a single key from the specified cache
+      tags: [keys]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Key to delete
+      responses:
+        "200":
+          description: Key deleted successfully
+          content:
+            application/json:
+              schema:
+                type: string
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/keys/delete:
+    post:
+      summary: Delete multiple keys
+      description: Deletes multiple keys from the specified cache
+      tags: [keys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteBatchRequest'
+      responses:
+        "200":
+          description: Keys deleted successfully
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/keys/get:
+    post:
+      summary: Get multiple values
+      description: Retrieves values for a list of cache keys
+      tags: [keys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetBatchRequest'
+      responses:
+        "200":
+          description: Map of keys to values
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: One or more keys not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/commands/execute:
+    post:
+      summary: Execute one or more cache commands
+      tags:
+        - commands
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandRequest'
+      responses:
+        '200':
+          description: Command execution result
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Bad request (e.g., invalid JSON or validation error)
+        '500':
+          description: Internal server error (e.g., command execution failure)
+
+  /admin/backup:
+    post:
+      summary: Backup a cache to a file
+      tags:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminBackupRequest'
+      responses:
+        '200':
+          description: Backup completed successfully
+        '400':
+          description: Bad request (validation or binding error)
+        '500':
+          description: Internal server error (backup failed)
+
+  /admin/restore:
+    post:
+      summary: Restore a cache from a file
+      tags:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRestoreRequest'
+      responses:
+        '200':
+          description: Restore completed successfully
+        '400':
+          description: Bad request (validation or binding error)
+        '500':
+          description: Internal server error (restore failed)
+
+components:
+  schemas:
+    AdminBackupRequest:
+      type: object
+      required:
+        - cache
+        - filename
+      properties:
+        cache:
+          type: string
+          description: Name of the cache to back up
+        filename:
+          type: string
+          description: Target file path for the backup
+    AdminRestoreRequest:
+      type: object
+      required:
+        - cache
+        - filename
+      properties:
+        cache:
+          type: string
+          description: Name of the cache to restore (may be ignored internally)
+        filename:
+          type: string
+          description: Path to the backup file to restore
+    CreateCacheRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the cache to create
+        ttl:
+          type: integer
+          description: TTL for the cache in seconds
+
+    CreateKeysRequest:
+      type: object
+      properties:
+        entries:
+          type: object
+          additionalProperties: {}
+        ttl:
+          type: object
+          additionalProperties:
+            type: integer
+
+    DeleteBatchRequest:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+          description: List of keys to delete
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A human-readable message or structured error detail
+
+    GetBatchRequest:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: string
+          description: List of keys to retrieve
+
+    HandlePutRequest:
+      type: object
+      properties:
+        value:
+          type: string
+          description: New value to store for the key
+
+    ReplaceBatchRequest:
+      type: object
+      properties:
+        entries:
+          type: object
+          additionalProperties: {}
+          description: Map of keys to their new values
+        ttl:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Map of keys to their new TTLs (in seconds)
+
+    UpdateCacheRequest:
+      type: object
+      properties:
+        ttl:
+          type: integer
+          description: TTL for the cache in seconds
+
+    CommandRequest:
+      type: object
+      required: [commands]
+      properties:
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/Command'
+
+    Command:  # Public-facing interface, not RawCommand
+      oneOf:
+        - $ref: '#/components/schemas/CommandGet'
+        - $ref: '#/components/schemas/CommandReplace'
+        - $ref: '#/components/schemas/CommandInc'
+        - $ref: '#/components/schemas/CommandReturn'
+        - $ref: '#/components/schemas/CommandPrint'
+        - $ref: '#/components/schemas/CommandNoop'
+        - $ref: '#/components/schemas/CommandIf'
+        - $ref: '#/components/schemas/CommandFor'
+        - $ref: '#/components/schemas/CommandGroup'
+      discriminator:
+        propertyName: type
+
+    CommandGet:
+      type: object
+      required: [type, keys]
+      properties:
+        type:
+          enum: [GET]
+        keys:
+          type: array
+          items:
+            type: string
+
+    CommandReplace:
+      type: object
+      required: [type, key, value]
+      properties:
+        type:
+          enum: [REPLACE]
+        key:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: object
+            - type: array
+
+    CommandInc:
+      type: object
+      required: [type, key, value]
+      properties:
+        type:
+          enum: [INC]
+        key:
+          type: string
+        value:
+          type: number
+
+    CommandReturn:
+      type: object
+      required: [type, values]
+      properties:
+        type:
+          enum: [RETURN]
+        values:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: object
+              - type: array
+
+    CommandPrint:
+      type: object
+      required: [type, messages]
+      properties:
+        type:
+          enum: [PRINT]
+        messages:
+          type: array
+          items:
+            type: string
+
+    CommandNoop:
+      type: object
+      required: [type]
+      properties:
+        type:
+          enum: [NOOP]
+
+    CommandIf:
+      type: object
+      required: [type, condition, if_true, if_false]
+      properties:
+        type:
+          enum: [IF]
+        condition:
+          type: string
+        if_true:
+          $ref: '#/components/schemas/RawCommand'
+        if_false:
+          $ref: '#/components/schemas/RawCommand'
+
+    CommandFor:
+      type: object
+      required: [type, loop_expr, commands]
+      properties:
+        type:
+          enum: [FOR]
+        loop_expr:
+          type: string
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawCommand'
+
+    CommandGroup:
+      type: object
+      required: [type]
+      properties:
+        type:
+          enum: [COMMANDS]
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawCommand'
