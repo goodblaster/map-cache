@@ -359,6 +359,7 @@ paths:
           description: Bad request (validation or binding error)
         '500':
           description: Internal server error (backup failed)
+
   /admin/restore:
     post:
       summary: Restore a cache from a file
@@ -479,20 +480,132 @@ components:
 
     CommandRequest:
       type: object
-      required:
-        - commands
+      required: [commands]
       properties:
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/Command'
+
+    Command:  # Public-facing interface, not RawCommand
+      oneOf:
+        - $ref: '#/components/schemas/CommandGet'
+        - $ref: '#/components/schemas/CommandReplace'
+        - $ref: '#/components/schemas/CommandInc'
+        - $ref: '#/components/schemas/CommandReturn'
+        - $ref: '#/components/schemas/CommandPrint'
+        - $ref: '#/components/schemas/CommandNoop'
+        - $ref: '#/components/schemas/CommandIf'
+        - $ref: '#/components/schemas/CommandFor'
+        - $ref: '#/components/schemas/CommandGroup'
+      discriminator:
+        propertyName: type
+
+    CommandGet:
+      type: object
+      required: [type, keys]
+      properties:
+        type:
+          enum: [GET]
+        keys:
+          type: array
+          items:
+            type: string
+
+    CommandReplace:
+      type: object
+      required: [type, key, value]
+      properties:
+        type:
+          enum: [REPLACE]
+        key:
+          type: string
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: object
+            - type: array
+
+    CommandInc:
+      type: object
+      required: [type, key, value]
+      properties:
+        type:
+          enum: [INC]
+        key:
+          type: string
+        value:
+          type: number
+
+    CommandReturn:
+      type: object
+      required: [type, values]
+      properties:
+        type:
+          enum: [RETURN]
+        values:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+              - type: object
+              - type: array
+
+    CommandPrint:
+      type: object
+      required: [type, messages]
+      properties:
+        type:
+          enum: [PRINT]
+        messages:
+          type: array
+          items:
+            type: string
+
+    CommandNoop:
+      type: object
+      required: [type]
+      properties:
+        type:
+          enum: [NOOP]
+
+    CommandIf:
+      type: object
+      required: [type, condition, if_true, if_false]
+      properties:
+        type:
+          enum: [IF]
+        condition:
+          type: string
+        if_true:
+          $ref: '#/components/schemas/RawCommand'
+        if_false:
+          $ref: '#/components/schemas/RawCommand'
+
+    CommandFor:
+      type: object
+      required: [type, loop_expr, commands]
+      properties:
+        type:
+          enum: [FOR]
+        loop_expr:
+          type: string
         commands:
           type: array
           items:
             $ref: '#/components/schemas/RawCommand'
 
-    RawCommand:
+    CommandGroup:
       type: object
-      description: A command object with a 'type' discriminator and additional fields depending on the command type
-      required:
-        - type
+      required: [type]
       properties:
         type:
-          type: string
-          description: Type of command (e.g., GET, REPLACE, INC, etc.)
+          enum: [COMMANDS]
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawCommand'
