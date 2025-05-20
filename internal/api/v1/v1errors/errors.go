@@ -55,8 +55,6 @@ func ApiError(c echo.Context, code int, errmsg any) error {
 }
 
 // ErrorResponse represents a standard error response.
-//
-// swagger:model ErrorResponse
 type ErrorResponse struct {
 	// A human-readable message or structured error detail
 	Message any `json:"message"`
@@ -66,7 +64,7 @@ type ErrorResponse struct {
 
 	// Code is not exposed in Swagger
 	Code int `json:"-"`
-} // @name ErrorResponse
+}
 
 func NewErrorResponse(code int, message ...interface{}) *ErrorResponse {
 	he := &ErrorResponse{Code: code, Message: http.StatusText(code)}

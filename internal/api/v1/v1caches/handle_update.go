@@ -9,25 +9,11 @@ import (
 )
 
 // updateCacheRequest represents the payload for updating a cache.
-//
-// swagger:model updateCacheRequest
 type updateCacheRequest struct {
-	// TTL for the cache in seconds
-	// required: true
-	TTL *int64 `json:"ttl"`
-} // @name UpdateCacheRequest
+	TTL *int64 `json:"ttl"` // milliseconds
+}
 
 // handleUpdateCache updates the expiration time of a cache.
-//
-// @Summary Update cache expiration
-// @Description Updates the expiration time of a named cache. If no TTL is provided, it removes the expiration.
-// @Tags caches
-// @Param body body updateCacheRequest true "Cache update payload"
-// @Produce json
-// @Success 204
-// @Failure 400 {object} v1errors.ErrorResponse "Invalid request or bad payload"
-// @Failure 500 {object} v1errors.ErrorResponse "Internal server error"
-// @Router /caches/{name} [put]
 func handleUpdateCache() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var input updateCacheRequest

@@ -9,13 +9,11 @@ import (
 )
 
 // deleteBatchRequest represents the request body for batch key deletion.
-//
-// swagger:model deleteBatchRequest
 type deleteBatchRequest struct {
 	// List of keys to delete
 	// required: true
 	Keys []string `json:"keys"`
-} // @name DeleteBatchRequest
+}
 
 // Validate - Validates the deleteBatchRequest.
 func (req deleteBatchRequest) Validate() error {
@@ -31,15 +29,6 @@ func (req deleteBatchRequest) Validate() error {
 }
 
 // handleDelete handles deletion of a single cache key.
-//
-// @Summary Delete a single key
-// @Description Deletes a single key from the specified cache
-// @Tags keys
-// @Produce json
-// @Param key path string true "Key to delete"
-// @Success 200 {string} string "Key deleted successfully"
-// @Failure 500 {object} v1errors.ErrorResponse "Server error"
-// @Router /keys/{key} [delete]
 func handleDelete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
@@ -54,17 +43,6 @@ func handleDelete() echo.HandlerFunc {
 }
 
 // handleDeleteBatch handles deletion of multiple keys.
-//
-// @Summary Delete multiple keys
-// @Description Deletes multiple keys from the specified cache
-// @Tags keys
-// @Accept json
-// @Produce json
-// @Param body body deleteBatchRequest true "List of keys to delete"
-// @Success 200 {string} string "Keys deleted successfully"
-// @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
-// @Failure 500 {object} v1errors.ErrorResponse "Server error"
-// @Router /keys/delete [post]
 func handleDeleteBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)

@@ -9,13 +9,9 @@ import (
 )
 
 // getBatchRequest represents the request body for retrieving multiple keys.
-//
-// swagger:model getBatchRequest
 type getBatchRequest struct {
-	// List of keys to retrieve
-	// required: true
-	Keys []string `json:"keys"`
-} // @name GetBatchRequest
+	Keys []string `json:"keys,required"`
+}
 
 func (req getBatchRequest) Validate() error {
 	if len(req.Keys) == 0 {
@@ -30,15 +26,6 @@ func (req getBatchRequest) Validate() error {
 }
 
 // handleGetValue retrieves a single value from the cache.
-//
-// @Summary Get a single value
-// @Description Retrieves the value associated with a single cache key
-// @Tags keys
-// @Produce json
-// @Param key path string true "Key to retrieve"
-// @Success 200 {object} interface{} "Value for the given key"
-// @Failure 404 {object} v1errors.ErrorResponse "Key not found"
-// @Router /keys/{key} [get]
 func handleGetValue() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
@@ -54,17 +41,6 @@ func handleGetValue() echo.HandlerFunc {
 }
 
 // handleGetBatch retrieves multiple values from the cache.
-//
-// @Summary Get multiple values
-// @Description Retrieves values for a list of cache keys
-// @Tags keys
-// @Accept json
-// @Produce json
-// @Param body body getBatchRequest true "List of keys to retrieve"
-// @Success 200 {object} map[string]interface{} "Map of keys to values"
-// @Failure 400 {object} v1errors.ErrorResponse "Invalid request body"
-// @Failure 404 {object} v1errors.ErrorResponse "One or more keys not found"
-// @Router /keys/get [post]
 func handleGetBatch() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cache := Cache(c)
