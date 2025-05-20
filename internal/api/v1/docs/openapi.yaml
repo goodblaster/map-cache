@@ -4,6 +4,43 @@ info:
   version: "1.0"
   description: API for managing web cache keys
 paths:
+  /admin/backup:
+    post:
+      summary: Backup a cache to a file
+      tags:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminBackupRequest'
+      responses:
+        '200':
+          description: Backup completed successfully
+        '400':
+          description: Bad request (validation or binding error)
+        '500':
+          description: Internal server error (backup failed)
+  /admin/restore:
+    post:
+      summary: Restore a cache from a file
+      tags:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRestoreRequest'
+      responses:
+        '200':
+          description: Restore completed successfully
+        '400':
+          description: Bad request (validation or binding error)
+        '500':
+          description: Internal server error (restore failed)
+
   /api/v1/caches:
     get:
       summary: List all caches
@@ -318,6 +355,30 @@ paths:
 
 components:
   schemas:
+    AdminBackupRequest:
+      type: object
+      required:
+        - cache
+        - filename
+      properties:
+        cache:
+          type: string
+          description: Name of the cache to back up
+        filename:
+          type: string
+          description: Target file path for the backup
+    AdminRestoreRequest:
+      type: object
+      required:
+        - cache
+        - filename
+      properties:
+        cache:
+          type: string
+          description: Name of the cache to restore (may be ignored internally)
+        filename:
+          type: string
+          description: Path to the backup file to restore
     CreateCacheRequest:
       type: object
       properties:
