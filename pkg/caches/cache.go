@@ -12,6 +12,7 @@ type Cache struct {
 	tag     *string           // who owns this
 	exp     *Timer            // expiration timer
 	keyExps map[string]*Timer // key-based expiration timers
+	//triggers map[string][]triggers2.Trigger
 }
 
 func New() *Cache {
@@ -19,5 +20,6 @@ func New() *Cache {
 		cmap:    containers.NewGabsMap(),
 		mutex:   &sync.Mutex{},
 		keyExps: map[string]*Timer{},
+		//triggers: map[string][]triggers2.Trigger{},
 	}
 }

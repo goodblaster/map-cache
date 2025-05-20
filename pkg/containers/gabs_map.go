@@ -2,6 +2,9 @@ package containers
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/Jeffail/gabs/v2"
 )
@@ -43,4 +46,56 @@ func (gMap *GabsMap) Set(ctx context.Context, value any, path ...string) error {
 
 func (gMap *GabsMap) Data(ctx context.Context) map[string]any {
 	return gMap.container.Data().(map[string]any)
+}
+
+func (gMap *GabsMap) WildKeys(ctx context.Context, path string) []string {
+	var results []string
+	tokens := strings.Split(path, "/")
+
+	var walk func(node *gabs.Container, idx int, currentPath []string)
+	walk = func(node *gabs.Container, idx int, currentPath []string) {
+		if node == nil || node.Data() == nil {
+			return
+		}
+
+		if idx >= len(tokens) {
+			results = append(results, strings.Join(currentPath, "/"))
+			return
+		}
+
+		token := tokens[idx]
+
+		if token == "*" {
+			switch data := node.Data().(type) {
+			case map[string]interface{}:
+				for key := range data {
+					child := node.Path(key)
+					walk(child, idx+1, append(currentPath, key))
+				}
+			case []interface{}:
+				for i := range data {
+					child := node.Index(i)
+					walk(child, idx+1, append(currentPath, fmt.Sprintf("%d", i)))
+				}
+			}
+		} else {
+			// Try map lookup
+			child := node.Path(token)
+			if child != nil && child.Data() != nil {
+				walk(child, idx+1, append(currentPath, token))
+				return
+			}
+
+			// Try array index
+			if i, err := strconv.Atoi(token); err == nil {
+				child := node.Index(i)
+				if child != nil && child.Data() != nil {
+					walk(child, idx+1, append(currentPath, token))
+				}
+			}
+		}
+	}
+
+	walk(gMap.container, 0, []string{})
+	return results
 }
