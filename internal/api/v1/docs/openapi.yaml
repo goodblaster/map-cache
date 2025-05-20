@@ -4,43 +4,6 @@ info:
   version: "1.0"
   description: API for managing web cache keys
 paths:
-  /admin/backup:
-    post:
-      summary: Backup a cache to a file
-      tags:
-        - admin
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AdminBackupRequest'
-      responses:
-        '200':
-          description: Backup completed successfully
-        '400':
-          description: Bad request (validation or binding error)
-        '500':
-          description: Internal server error (backup failed)
-  /admin/restore:
-    post:
-      summary: Restore a cache from a file
-      tags:
-        - admin
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AdminRestoreRequest'
-      responses:
-        '200':
-          description: Restore completed successfully
-        '400':
-          description: Bad request (validation or binding error)
-        '500':
-          description: Internal server error (restore failed)
-
   /api/v1/caches:
     get:
       summary: List all caches
@@ -353,6 +316,68 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/commands/execute:
+    post:
+      summary: Execute one or more cache commands
+      tags:
+        - commands
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandRequest'
+      responses:
+        '200':
+          description: Command execution result
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Bad request (e.g., invalid JSON or validation error)
+        '500':
+          description: Internal server error (e.g., command execution failure)
+
+  /admin/backup:
+    post:
+      summary: Backup a cache to a file
+      tags:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminBackupRequest'
+      responses:
+        '200':
+          description: Backup completed successfully
+        '400':
+          description: Bad request (validation or binding error)
+        '500':
+          description: Internal server error (backup failed)
+  /admin/restore:
+    post:
+      summary: Restore a cache from a file
+      tags:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRestoreRequest'
+      responses:
+        '200':
+          description: Restore completed successfully
+        '400':
+          description: Bad request (validation or binding error)
+        '500':
+          description: Internal server error (restore failed)
+
 components:
   schemas:
     AdminBackupRequest:
@@ -451,3 +476,23 @@ components:
         ttl:
           type: integer
           description: TTL for the cache in seconds
+
+    CommandRequest:
+      type: object
+      required:
+        - commands
+      properties:
+        commands:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawCommand'
+
+    RawCommand:
+      type: object
+      description: A command object with a 'type' discriminator and additional fields depending on the command type
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: Type of command (e.g., GET, REPLACE, INC, etc.)
