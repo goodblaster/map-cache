@@ -40,12 +40,30 @@ func (p CommandReturn) Do(ctx context.Context, cache *Cache) CmdResult {
 
 func evaluateInterpolations(s string, cache *Cache, ctx context.Context) (string, error) {
 	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	return re.ReplaceAllStringFunc(s, func(match string) string {
-		key := strings.TrimSpace(re.FindStringSubmatch(match)[1])
+	matches := re.FindAllStringSubmatchIndex(s, -1)
+	if len(matches) == 0 {
+		return s, nil
+	}
+
+	var result strings.Builder
+	lastIndex := 0
+
+	for _, match := range matches {
+		start, end := match[0], match[1]
+		keyStart, keyEnd := match[2], match[3]
+
+		result.WriteString(s[lastIndex:start])
+
+		key := strings.TrimSpace(s[keyStart:keyEnd])
 		val, err := cache.Get(ctx, key)
 		if err != nil {
-			return match // leave as-is or optionally return error
+			return "", fmt.Errorf("interpolation error for key %q: %w", key, err)
 		}
-		return fmt.Sprintf("%v", val)
-	}), nil
+
+		result.WriteString(fmt.Sprintf("%v", val))
+		lastIndex = end
+	}
+
+	result.WriteString(s[lastIndex:])
+	return result.String(), nil
 }
