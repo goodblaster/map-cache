@@ -20,7 +20,7 @@ func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
 		return errors.Wrap(err, "could not set value")
 	}
 
-	//_ = cache.OnChange(ctx, key, oldValue, value)
+	_ = cache.OnChange(ctx, key, oldValue, value)
 	return nil
 }
 
