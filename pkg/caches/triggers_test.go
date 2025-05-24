@@ -152,12 +152,11 @@ func TestTrigger_Nested(t *testing.T) {
 	assert.NoError(t, err)
 
 	id, err := cache.CreateTrigger(ctx, "*/countdown",
-		FOR("${{*/countdown}}",
-			IF("(${{${{1}}/countdown}} == 0)",
-				REPLACE("${{1}}/state", "complete"),
-				NOOP(),
-			),
-		))
+		IF("(${{${{1}}/countdown}} == 0)",
+			REPLACE("${{1}}/state", "complete"),
+			NOOP(),
+		),
+	)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, id)
 

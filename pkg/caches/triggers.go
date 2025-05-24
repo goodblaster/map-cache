@@ -2,6 +2,7 @@ package caches
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/goodblaster/errors"
@@ -27,8 +28,16 @@ func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newV
 
 		// Full list might be used later. For now, accept any match.
 		if len(matchingKeys) > 0 {
+			vars, err := ExtractWildcardMatches(key, triggerKey)
+			if err != nil {
+				return errors.Wrapf(err, "failed to extract wildcard matches for key %s", key)
+			}
+
 			for _, trigger := range triggers {
-				if res := trigger.Command.Do(ctx, cache); res.Error != nil {
+				cmdCtx := context.WithValue(ctx, "vars", vars)
+				cmdCtx = context.WithValue(cmdCtx, "oldValue", oldValue)
+				cmdCtx = context.WithValue(cmdCtx, "newValue", newValue)
+				if res := trigger.Command.Do(cmdCtx, cache); res.Error != nil {
 					return errors.Wrap(res.Error, "trigger failed")
 				}
 			}
@@ -55,4 +64,24 @@ func (cache *Cache) KeysMatch(ctx context.Context, triggerKey, dataKey string) [
 	}
 
 	return keys
+}
+
+// ExtractWildcardMatches returns values that match wildcards in triggerKey.
+func ExtractWildcardMatches(key, triggerKey string) ([]string, error) {
+	keyParts := strings.Split(key, "/")
+	triggerParts := strings.Split(triggerKey, "/")
+
+	if len(keyParts) != len(triggerParts) {
+		return nil, fmt.Errorf("mismatched path lengths: %v vs %v", keyParts, triggerParts)
+	}
+
+	var matches []string
+	for i := range keyParts {
+		if triggerParts[i] == "*" {
+			matches = append(matches, keyParts[i])
+		} else if triggerParts[i] != keyParts[i] {
+			return nil, fmt.Errorf("segment mismatch at index %d: %s != %s", i, triggerParts[i], keyParts[i])
+		}
+	}
+	return matches, nil
 }
