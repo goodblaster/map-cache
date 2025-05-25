@@ -2,7 +2,6 @@ package caches
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/goodblaster/errors"
@@ -68,19 +67,26 @@ func (cache *Cache) KeysMatch(ctx context.Context, triggerKey, dataKey string) [
 
 // ExtractWildcardMatches returns values that match wildcards in triggerKey.
 func ExtractWildcardMatches(key, triggerKey string) ([]string, error) {
+	// Normalize by trimming any leading/trailing slashes
+	key = strings.Trim(key, "/")
+	triggerKey = strings.Trim(triggerKey, "/")
+
 	keyParts := strings.Split(key, "/")
 	triggerParts := strings.Split(triggerKey, "/")
 
 	if len(keyParts) != len(triggerParts) {
-		return nil, fmt.Errorf("mismatched path lengths: %v vs %v", keyParts, triggerParts)
+		return nil, errors.Newf("mismatched path lengths: %v vs %v", keyParts, triggerParts)
 	}
 
 	var matches []string
 	for i := range keyParts {
 		if triggerParts[i] == "*" {
+			if keyParts[i] == "" {
+				return nil, errors.Newf("wildcard at index %d matched empty segment", i)
+			}
 			matches = append(matches, keyParts[i])
 		} else if triggerParts[i] != keyParts[i] {
-			return nil, fmt.Errorf("segment mismatch at index %d: %s != %s", i, triggerParts[i], keyParts[i])
+			return nil, errors.Newf("segment mismatch at index %d: %s != %s", i, triggerParts[i], keyParts[i])
 		}
 	}
 	return matches, nil

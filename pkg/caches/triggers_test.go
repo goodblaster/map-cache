@@ -3,6 +3,7 @@ package caches
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -212,4 +213,90 @@ func TestTrigger_Nested(t *testing.T) {
 	val, err = cache.Get(ctx, "state")
 	assert.NoError(t, err)
 	assert.EqualValues(t, "complete", val)
+}
+
+func TestExtractWildcardMatches(t *testing.T) {
+	type args struct {
+		key        string
+		triggerKey string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "single wildcard match",
+			args: args{
+				key:        "a/countdown",
+				triggerKey: "*/countdown",
+			},
+			want:    []string{"a"},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "multiple wildcard match",
+			args: args{
+				key:        "a/b/c",
+				triggerKey: "*/*/*",
+			},
+			want:    []string{"a", "b", "c"},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "mixed wildcard and literal",
+			args: args{
+				key:        "job-123/domain/countdown",
+				triggerKey: "*/domain/*",
+			},
+			want:    []string{"job-123", "countdown"},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "no wildcards, exact match",
+			args: args{
+				key:        "a/b",
+				triggerKey: "a/b",
+			},
+			want:    nil,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "wildcard mismatch in literal",
+			args: args{
+				key:        "a/countdown",
+				triggerKey: "x/countdown",
+			},
+			want:    nil,
+			wantErr: assert.Error,
+		},
+		{
+			name: "mismatched lengths",
+			args: args{
+				key:        "a/b/c",
+				triggerKey: "*/b",
+			},
+			want:    nil,
+			wantErr: assert.Error,
+		},
+		{
+			name: "trailing slash mismatch",
+			args: args{
+				key:        "a/b/",
+				triggerKey: "*/b/*",
+			},
+			want:    nil,
+			wantErr: assert.Error,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ExtractWildcardMatches(tt.args.key, tt.args.triggerKey)
+			if !tt.wantErr(t, err, fmt.Sprintf("ExtractWildcardMatches(%v, %v)", tt.args.key, tt.args.triggerKey)) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "ExtractWildcardMatches(%v, %v)", tt.args.key, tt.args.triggerKey)
+		})
+	}
 }
