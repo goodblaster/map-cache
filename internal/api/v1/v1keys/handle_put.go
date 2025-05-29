@@ -38,9 +38,6 @@ func handlePut() echo.HandlerFunc {
 			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not replace contents"))
 		}
 
-		// Triggers?
-		//
-
 		return c.NoContent(http.StatusOK)
 	}
 }
@@ -90,9 +87,6 @@ func handleReplaceBatch() echo.HandlerFunc {
 				logos.WithError(err).Warnf("could not set cache expiration for key %q", key)
 			}
 		}
-
-		// Triggers?
-		//
 
 		return c.NoContent(http.StatusOK)
 	}

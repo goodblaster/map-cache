@@ -47,9 +47,6 @@ func handleCreate() echo.HandlerFunc {
 			}
 		}
 
-		// Triggers?
-		//
-
 		return c.NoContent(http.StatusCreated)
 	}
 }
