@@ -28,6 +28,9 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 	parameters := map[string]any{}
 	conditionExpr := p.Condition
 
+	// Sub in contextual variables.
+	conditionExpr = substituteContextVars(ctx, conditionExpr)
+
 	// Handle any(...) or all(...) first
 	conditionExpr, err := expandAnyAll(conditionExpr, cache, parameters, ctx)
 	if err != nil {
@@ -142,4 +145,19 @@ func (c *CommandIf) UnmarshalJSON(data []byte) error {
 	c.IfFalse = ifFalse.Command
 
 	return nil
+}
+
+func substituteContextVars(ctx context.Context, expr string) string {
+	val := ctx.Value("vars")
+	vars, ok := val.([]string)
+	if !ok {
+		return expr
+	}
+
+	for i := range vars {
+		v := fmt.Sprintf("${{%d}}", i+1)
+		expr = strings.ReplaceAll(expr, v, vars[i])
+	}
+
+	return expr
 }

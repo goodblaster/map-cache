@@ -1,4 +1,4 @@
-package v1keys
+package v1triggers
 
 import (
 	"net/http"

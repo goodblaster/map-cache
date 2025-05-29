@@ -8,6 +8,8 @@ import (
 
 // Replace - Replace single value in the cache.
 func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
+	key = substituteContextVars(ctx, key)
+
 	// Check key first. Error if does not exist.
 	oldValue, err := cache.cmap.Get(ctx, SplitKey(key)...)
 	_ = oldValue
@@ -20,7 +22,7 @@ func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
 		return errors.Wrap(err, "could not set value")
 	}
 
-	//_ = cache.OnChange(ctx, key, oldValue, value)
+	_ = cache.OnChange(ctx, key, oldValue, value)
 	return nil
 }
 
