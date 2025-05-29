@@ -7,19 +7,19 @@ import (
 )
 
 type Cache struct {
-	cmap    containers.Map
-	mutex   *sync.Mutex
-	tag     *string           // who owns this
-	exp     *Timer            // expiration timer
-	keyExps map[string]*Timer // key-based expiration timers
-	//triggers map[string][]triggers2.Trigger
+	cmap     containers.Map
+	mutex    *sync.Mutex
+	tag      *string              // who owns this
+	exp      *Timer               // expiration timer
+	keyExps  map[string]*Timer    // key-based expiration timers
+	triggers map[string][]Trigger // key-based triggers
 }
 
 func New() *Cache {
 	return &Cache{
-		cmap:    containers.NewGabsMap(),
-		mutex:   &sync.Mutex{},
-		keyExps: map[string]*Timer{},
-		//triggers: map[string][]triggers2.Trigger{},
+		cmap:     containers.NewGabsMap(),
+		mutex:    &sync.Mutex{},
+		keyExps:  map[string]*Timer{},
+		triggers: map[string][]Trigger{},
 	}
 }

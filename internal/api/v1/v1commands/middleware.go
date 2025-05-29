@@ -3,7 +3,7 @@ package v1commands
 import (
 	"net/http"
 
-	cache2 "github.com/goodblaster/map-cache/internal/api/v1/v1errors"
+	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -20,7 +20,7 @@ func cacheMW(next echo.HandlerFunc) echo.HandlerFunc {
 		// Make sure it exists
 		cache, err := caches.FetchCache(cacheName)
 		if err != nil {
-			return cache2.ApiError(c, http.StatusFailedDependency, "cache not found")
+			return v1errors.ApiError(c, http.StatusFailedDependency, "cache not found")
 		}
 
 		// Generate a request ID and set it in the context

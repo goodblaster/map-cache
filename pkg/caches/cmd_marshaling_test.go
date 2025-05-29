@@ -17,7 +17,6 @@ func TestUnmarshaling(t *testing.T) {
 		panic(err)
 	}
 
-	fmt.Println(string(b))
 	input.Commands = nil
 	err = json.Unmarshal(b, &input)
 	assert.NoError(t, err)
