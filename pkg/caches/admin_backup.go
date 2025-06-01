@@ -9,11 +9,26 @@ import (
 	"github.com/google/uuid"
 )
 
+type RawTrigger struct {
+	Id      string     `json:"id"`
+	Key     string     `json:"key"`
+	Command RawCommand `json:"command"`
+}
+
 type BackupContainer struct {
-	Name           string           `json:"name"`
-	Data           map[string]any   `json:"data"`
-	KeyExpirations map[string]int64 `json:"key_expirations"`
-	Expiration     *int64           `json:"expiration,omitempty"`
+	Name           string               `json:"name"`
+	Data           map[string]any       `json:"data"`
+	KeyExpirations map[string]int64     `json:"key_expirations"`
+	Triggers       map[string][]Trigger `json:"triggers,omitempty"`
+	Expiration     *int64               `json:"expiration,omitempty"`
+}
+
+type RestoreContainer struct {
+	Name           string                  `json:"name"`
+	Data           map[string]any          `json:"data"`
+	KeyExpirations map[string]int64        `json:"key_expirations"`
+	Triggers       map[string][]RawTrigger `json:"triggers,omitempty"`
+	Expiration     *int64                  `json:"expiration,omitempty"`
 }
 
 // Backup creates a backup of the specified cache and saves it to the given file.
@@ -48,6 +63,7 @@ func Backup(ctx context.Context, cacheName string, outFile string) error {
 		Name:           cacheName,
 		Data:           cache.cmap.Data(ctx),
 		KeyExpirations: keysTTLs,
+		Triggers:       cache.triggers,
 	}
 
 	if cache.exp != nil {
