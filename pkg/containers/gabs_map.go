@@ -3,6 +3,7 @@ package containers
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -33,6 +34,50 @@ func (gMap *GabsMap) Delete(ctx context.Context, path ...string) error {
 
 func (gMap *GabsMap) ArrayRemove(ctx context.Context, index int, path ...string) error {
 	return gMap.container.ArrayRemove(index, path...)
+}
+
+func (gMap *GabsMap) ArrayAppend(ctx context.Context, value any, path ...string) error {
+	return gMap.container.ArrayAppend(value, path...)
+}
+
+func (gMap *GabsMap) ArrayResize(ctx context.Context, newSize int, path ...string) error {
+	if newSize < 0 {
+		return fmt.Errorf("newSize cannot be negative: %d", newSize)
+	}
+
+	c := gMap.container.Search(path...)
+	if c == nil {
+		return ErrNotFound
+	}
+
+	data := c.Data()
+	v := reflect.ValueOf(data)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return fmt.Errorf("value at path is not a slice or array, got %T", data)
+	}
+
+	currLen := v.Len()
+
+	switch {
+	case currLen == newSize:
+		return nil
+	case currLen < newSize:
+		// Append nils until newSize is reached
+		for i := currLen; i < newSize; i++ {
+			if err := gMap.container.ArrayAppend(nil, path...); err != nil {
+				return fmt.Errorf("error appending nil at index %d: %w", i, err)
+			}
+		}
+	case currLen > newSize:
+		// Remove from the end to avoid index shifting
+		for i := currLen - 1; i >= newSize; i-- {
+			if err := gMap.container.ArrayRemove(i, path...); err != nil {
+				return fmt.Errorf("error removing index %d: %w", i, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (gMap *GabsMap) Exists(ctx context.Context, path ...string) bool {
