@@ -60,19 +60,28 @@ func Test_Basic(t *testing.T) {
 	// BatchGet a value from the cache
 	batch, err := cache.BatchGet(ctx, "key1")
 	if assert.NoError(t, err, "Failed to fetch batch from cache") {
-		assert.EqualValues(t, "value1", batch["key1"], "Expected value1, got %v", batch)
+		assert.EqualValues(t, "value1", batch[0], "Expected value1, got %v", batch)
 	}
 
 	// BatchGet a nested batch from the cache
 	batch, err = cache.BatchGet(ctx, "key3/innerKey1")
 	if assert.NoError(t, err, "Failed to fetch nested value from cache") {
-		assert.EqualValues(t, "innerValue1", batch["key3/innerKey1"])
+		assert.EqualValues(t, "innerValue1", batch[0])
 	}
 
 	// BatchGet a value from a slice in the cache
 	batch, err = cache.BatchGet(ctx, "key4/1")
 	if assert.NoError(t, err, "Failed to fetch slice value from cache") {
-		assert.EqualValues(t, "item2", batch["key4/1"])
+		assert.EqualValues(t, "item2", batch[0])
+	}
+
+	// Get multiple values from the cache
+	batch, err = cache.BatchGet(ctx, "key1", "key2", "key3/innerKey1", "key4/1")
+	if assert.NoError(t, err, "Failed to fetch multiple values from cache") {
+		assert.EqualValues(t, "value1", batch[0], "Expected value1, got %v", batch)
+		assert.EqualValues(t, "value2", batch[1], "Expected value2, got %v", batch)
+		assert.EqualValues(t, "innerValue1", batch[2], "Expected innerValue1, got %v", batch)
+		assert.EqualValues(t, "item2", batch[3], "Expected item2, got %v", batch)
 	}
 
 	// Change one value

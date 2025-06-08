@@ -78,3 +78,36 @@ func TestComplexCommand(t *testing.T) {
 		assert.Contains(t, res.Value, "job is complete")
 	}
 }
+
+func Test_MultipleGet(t *testing.T) {
+	ctx := context.Background()
+	cache := New()
+
+	// Create some test data
+	testData := map[string]any{
+		"key1":           "value1",
+		"key2":           "value2",
+		"key3/innerKey1": "innerValue1",
+		"key4/1":         "item2",
+	}
+
+	err := cache.Create(ctx, testData)
+	if !assert.NoError(t, err, "Failed to create test data in cache") {
+		return
+	}
+
+	res := COMMANDS(
+		GET("key1"),
+		GET("key2"),
+		GET("key3/innerKey1"),
+		GET("key4/1"),
+	).Do(ctx, cache)
+
+	if assert.Len(t, res.Value, 4, "Expected 4 items") {
+		vals := res.Value.([]any)
+		assert.EqualValues(t, "value1", vals[0], "Expected value1 for key1")
+		assert.EqualValues(t, "value2", vals[1], "Expected value2 for key2")
+		assert.EqualValues(t, "innerValue1", vals[2], "Expected innerValue1 for key3/innerKey1")
+		assert.EqualValues(t, "item2", vals[3], "Expected item2 for key4/1")
+	}
+}
