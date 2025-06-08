@@ -14,7 +14,7 @@ func TestREPLACE_NewKey(t *testing.T) {
 
 	res := REPLACE("foo", "bar").Do(ctx, cache)
 	assert.Error(t, res.Error)
-	assert.Nil(t, res.Values)
+	assert.Nil(t, res.Value)
 
 	assert.Equal(t, "key not found: foo", res.Error.Error())
 }
@@ -28,7 +28,7 @@ func TestREPLACE_OverwriteExistingKey(t *testing.T) {
 
 	res := REPLACE("num", 456).Do(ctx, cache)
 	assert.NoError(t, res.Error)
-	assert.Nil(t, res.Values)
+	assert.Nil(t, res.Value)
 
 	assert.EqualValues(t, 456.0, cache.cmap.Data(ctx)["num"])
 }
@@ -53,7 +53,7 @@ func TestREPLACE_NestedPath(t *testing.T) {
 	// Replace "Bob" with "Robert"
 	res := REPLACE("user/1/name", "Robert").Do(ctx, cache)
 	assert.NoError(t, res.Error)
-	assert.Nil(t, res.Values)
+	assert.Nil(t, res.Value)
 
 	// Navigate the actual nested structure
 	root := cache.cmap.Data(ctx)

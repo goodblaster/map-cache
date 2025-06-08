@@ -3,6 +3,7 @@ package caches
 import (
 	"context"
 	"encoding/json"
+	//"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,10 +13,20 @@ func TestRETURN_LiteralsOnly(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
 
-	cmd := RETURN("hello", 123, true)
+	cmd := RETURN("hello")
 	res := cmd.Do(ctx, cache)
 	assert.NoError(t, res.Error)
-	assert.Equal(t, []any{"hello", 123, true}, res.Values)
+	assert.Equal(t, "hello", res.Value)
+
+	cmd = RETURN(123)
+	res = cmd.Do(ctx, cache)
+	assert.NoError(t, res.Error)
+	assert.Equal(t, 123, res.Value)
+
+	cmd = RETURN(true)
+	res = cmd.Do(ctx, cache)
+	assert.NoError(t, res.Error)
+	assert.Equal(t, true, res.Value)
 }
 
 func TestRETURN_WithInterpolation(t *testing.T) {
@@ -30,11 +41,15 @@ func TestRETURN_WithInterpolation(t *testing.T) {
 	err = cache.Create(ctx, m)
 	assert.NoError(t, err)
 
-	cmd := RETURN("${{foo}}", "${{num}}", "raw string")
+	cmd := RETURN("${{foo}}")
 	res := cmd.Do(ctx, cache)
 	assert.NoError(t, res.Error)
+	assert.Equal(t, "bar", res.Value)
 
-	assert.Equal(t, []any{"bar", "42", "raw string"}, res.Values)
+	cmd = RETURN("${{num}}")
+	res = cmd.Do(ctx, cache)
+	assert.NoError(t, res.Error)
+	assert.EqualValues(t, 42, res.Value)
 }
 
 func TestRETURN_WithBadInterpolation(t *testing.T) {
@@ -45,5 +60,5 @@ func TestRETURN_WithBadInterpolation(t *testing.T) {
 	res := cmd.Do(ctx, cache)
 
 	assert.Error(t, res.Error)
-	assert.Nil(t, res.Values)
+	assert.Nil(t, res.Value)
 }

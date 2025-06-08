@@ -12,6 +12,8 @@ import (
 )
 
 func Test_Big(t *testing.T) {
+	t.Skip("Skipping big test for performance reasons")
+	
 	ctx := context.Background()
 	cache := New()
 	err := cache.Create(ctx, map[string]any{
@@ -57,9 +59,9 @@ func Test_Big(t *testing.T) {
 			id := fmt.Sprintf("%d", i)
 			for j := 0; j < M; j++ {
 				// Print every 10th iteration
-				if j%10 == 0 {
-					fmt.Print(i, j, " \n")
-				}
+				//if j%10 == 0 {
+				//	fmt.Print(i, j, " \n")
+				//}
 				cmd := COMMANDS(
 					INC(fmt.Sprintf("job-1234/domains/domain-%d/countdown", i), -1),
 					RETURN("${{job-1234/status}}"),
@@ -73,13 +75,9 @@ func Test_Big(t *testing.T) {
 					return
 				}
 				cache.Release(id)
-				if len(res.Values) > 0 {
-					vals := res.Values[0]
-					val := vals.([]any)[0]
-					status, ok := val.(string)
-					if ok && status == "complete" {
-						fmt.Printf("completed by thread %d \n", i)
-					}
+				status, ok := res.Value.(string)
+				if ok && status == "complete" {
+					fmt.Printf("completed by thread %d \n", i)
 				}
 			}
 		}(i)

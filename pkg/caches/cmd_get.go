@@ -6,40 +6,39 @@ import (
 )
 
 type CommandGet struct {
-	Keys []string `json:"keys,required"`
+	Key string `json:"key,required"`
 }
 
 func (CommandGet) Type() CommandType {
 	return CommandTypeGet
 }
 
-func GET(keys ...string) Command {
-	return CommandGet{Keys: keys}
+func GET(key string) Command {
+	return CommandGet{Key: key}
 }
 
 func (p CommandGet) Do(ctx context.Context, cache *Cache) CmdResult {
-	var res CmdResult
-	for _, key := range p.Keys {
-		values := map[string]any{}
-		if !strings.Contains(key, "*") {
-			v, err := cache.Get(ctx, key)
-			if err != nil {
-				return CmdResult{Error: err}
-			}
-			values[key] = v
-			res.Values = append(res.Values, values)
-			continue
-		}
+	key := p.Key
 
-		wildkeys := cache.cmap.WildKeys(ctx, key)
-		for _, key := range wildkeys {
-			v, err := cache.Get(ctx, key)
-			if err != nil {
-				return CmdResult{Error: err}
-			}
-			values[key] = v
+	if !strings.Contains(key, "*") {
+		val, err := cache.Get(ctx, key)
+		if err != nil {
+			return CmdResult{Error: err}
 		}
-		res.Values = append(res.Values, values)
+		return CmdResult{Value: val}
 	}
-	return res
+
+	// Wildcard path
+	matchingKeys := cache.cmap.WildKeys(ctx, key)
+	values := make(map[string]any, len(matchingKeys))
+
+	for _, k := range matchingKeys {
+		val, err := cache.Get(ctx, k)
+		if err != nil {
+			return CmdResult{Error: err}
+		}
+		values[k] = val
+	}
+
+	return CmdResult{Value: values}
 }

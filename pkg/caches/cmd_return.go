@@ -8,62 +8,91 @@ import (
 )
 
 type CommandReturn struct {
-	Values []any `json:"values,required"`
+	Key any `json:"key,required"`
 }
 
 func (CommandReturn) Type() CommandType {
 	return CommandTypeReturn
 }
 
-func RETURN(values ...any) Command {
-	return CommandReturn{Values: values}
+func RETURN(key any) Command {
+	return CommandReturn{Key: key}
 }
 
 func (p CommandReturn) Do(ctx context.Context, cache *Cache) CmdResult {
-	resolved := make([]any, len(p.Values))
-
-	for i, val := range p.Values {
-		switch str := val.(type) {
-		case string:
-			resolvedStr, err := evaluateInterpolations(str, cache, ctx)
-			if err != nil {
-				return CmdResult{Error: err}
-			}
-			resolved[i] = resolvedStr
-		default:
-			resolved[i] = val
+	switch str := p.Key.(type) {
+	case string:
+		resolvedVal, err := evaluateInterpolations(ctx, cache, str)
+		if err != nil {
+			return CmdResult{Error: err}
 		}
+		return CmdResult{Value: resolvedVal}
+	default:
+		return CmdResult{Value: p.Key}
 	}
-
-	return CmdResult{Values: resolved}
 }
 
-func evaluateInterpolations(s string, cache *Cache, ctx context.Context) (string, error) {
+func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, error) {
 	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
 	matches := re.FindAllStringSubmatchIndex(s, -1)
+
 	if len(matches) == 0 {
+		// No interpolations
 		return s, nil
 	}
 
-	var result strings.Builder
+	if len(matches) == 1 && matches[0][0] == 0 && matches[0][1] == len(s) {
+		// Entire string is a single interpolation
+		key := strings.TrimSpace(s[matches[0][2]:matches[0][3]])
+		if strings.Contains(key, "*") {
+			// Wildcard expression
+			keys := cache.cmap.WildKeys(ctx, key)
+			var results []any
+			for _, k := range keys {
+				val, err := cache.Get(ctx, k)
+				if err != nil {
+					return nil, fmt.Errorf("wildcard interpolation error for key %q: %w", k, err)
+				}
+				results = append(results, val)
+			}
+			return results, nil
+		}
+
+		// Non-wildcard direct fetch
+		val, err := cache.Get(ctx, key)
+		if err != nil {
+			return nil, fmt.Errorf("interpolation error for key %q: %w", key, err)
+		}
+		return val, nil
+	}
+
+	// Partial interpolations (template-style string)
+	var builder strings.Builder
 	lastIndex := 0
 
 	for _, match := range matches {
 		start, end := match[0], match[1]
 		keyStart, keyEnd := match[2], match[3]
-
-		result.WriteString(s[lastIndex:start])
-
 		key := strings.TrimSpace(s[keyStart:keyEnd])
-		val, err := cache.Get(ctx, key)
-		if err != nil {
-			return "", fmt.Errorf("interpolation error for key %q: %w", key, err)
+
+		if strings.Contains(key, "*") {
+			return nil, fmt.Errorf("wildcards not allowed in templated string: %q", key)
 		}
 
-		result.WriteString(fmt.Sprintf("%v", val))
+		// Append literal before interpolation
+		builder.WriteString(s[lastIndex:start])
+
+		val, err := cache.Get(ctx, key)
+		if err != nil {
+			return nil, fmt.Errorf("interpolation error for key %q: %w", key, err)
+		}
+		builder.WriteString(fmt.Sprintf("%v", val))
+
 		lastIndex = end
 	}
 
-	result.WriteString(s[lastIndex:])
-	return result.String(), nil
+	// Append the rest of the string
+	builder.WriteString(s[lastIndex:])
+
+	return builder.String(), nil
 }

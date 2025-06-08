@@ -67,13 +67,9 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 		}
 	}
 
-	var cmdResult CmdResult
-	for _, res := range allResults {
-		if res.Values != nil {
-			cmdResult.Values = append(cmdResult.Values, res.Values)
-		}
+	return CmdResult{
+		Value: allResults,
 	}
-	return cmdResult
 }
 
 func transformCommand(cmd Command, captures []string) Command {
@@ -96,11 +92,7 @@ func transformCommand(cmd Command, captures []string) Command {
 			IfFalse:   transformCommand(c.IfFalse, captures),
 		}
 	case CommandGet:
-		keys := make([]string, len(c.Keys))
-		for i, k := range c.Keys {
-			keys[i] = substituteCaptures(k, captures)
-		}
-		return &CommandGet{Keys: keys}
+		return &CommandGet{Key: c.Key}
 	case CommandReplace:
 		return &CommandReplace{
 			Key:   substituteCaptures(c.Key, captures),

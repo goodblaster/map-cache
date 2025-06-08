@@ -22,6 +22,7 @@ func PRINT(msgs ...string) Command {
 
 func (p CommandPrint) Do(ctx context.Context, cache *Cache) CmdResult {
 	var res CmdResult
+	var resValues []any
 	for _, msg := range p.Messages {
 		msg, keys := ExtractAndReplaceParams(msg)
 		var params []any
@@ -36,8 +37,9 @@ func (p CommandPrint) Do(ctx context.Context, cache *Cache) CmdResult {
 
 		formatted := fmt.Sprintf(msg, params...)
 		logos.Print(formatted)
-		res.Values = append(res.Values, formatted)
+		resValues = append(resValues, formatted)
 	}
+	res.Value = resValues
 	return res
 }
 

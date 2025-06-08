@@ -59,8 +59,7 @@ func TestComplexCommand(t *testing.T) {
 	).Do(ctx, cache)
 
 	if assert.NotNil(t, res) {
-		lastValue := res.Values[len(res.Values)-1]
-		assert.Contains(t, lastValue, "current job status is busy")
+		assert.Contains(t, res.Value, "current job status is busy")
 	}
 
 	res = COMMANDS(
@@ -76,7 +75,6 @@ func TestComplexCommand(t *testing.T) {
 
 	// Last result value should sat "job is complete".
 	if assert.NoError(t, res.Error) {
-		lastValue := res.Values[len(res.Values)-1]
-		assert.Contains(t, lastValue, "job is complete")
+		assert.Contains(t, res.Value, "job is complete")
 	}
 }

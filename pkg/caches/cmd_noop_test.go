@@ -12,5 +12,5 @@ func TestNOOP(t *testing.T) {
 	cache := New()
 	res := NOOP().Do(ctx, cache)
 	assert.NoError(t, res.Error)
-	assert.Nil(t, res.Values)
+	assert.Nil(t, res.Value)
 }

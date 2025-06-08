@@ -16,7 +16,7 @@ func TestPRINT_LiteralOnly(t *testing.T) {
 	assert.NoError(t, res.Error)
 
 	expected := []any{"hello world", "static message"}
-	assert.Equal(t, expected, res.Values)
+	assert.Equal(t, expected, res.Value)
 }
 
 func TestPRINT_WithInterpolation(t *testing.T) {
@@ -41,7 +41,7 @@ func TestPRINT_WithInterpolation(t *testing.T) {
 		"value is bar",
 		"number: 42",
 	}
-	assert.Equal(t, expected, res.Values)
+	assert.Equal(t, expected, res.Value)
 }
 
 func TestPRINT_MissingKey(t *testing.T) {

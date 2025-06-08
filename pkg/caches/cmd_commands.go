@@ -5,8 +5,8 @@ import (
 )
 
 type CmdResult struct {
-	Error  error
-	Values []any
+	Error error
+	Value any
 }
 
 type Command interface {
@@ -43,14 +43,15 @@ func COMMANDS(actions ...Command) Command {
 
 func (p CommandGroup) Do(ctx context.Context, cache *Cache) CmdResult {
 	var res CmdResult
+	var resValues []any
+
 	for _, action := range p.actions {
 		actionRes := action.Do(ctx, cache)
 		if actionRes.Error != nil {
 			return actionRes
 		}
-		if actionRes.Values != nil {
-			res.Values = append(res.Values, actionRes.Values)
-		}
+		resValues = append(resValues, actionRes.Value)
 	}
+	res.Value = resValues
 	return res
 }
