@@ -296,13 +296,12 @@ paths:
               $ref: '#/components/schemas/GetBatchRequest'
       responses:
         "200":
-          description: Map of keys to values
+          description: List of values
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties:
-                  type: string
+                type: array
+                items: {}
         "400":
           description: Invalid request body
           content:
@@ -332,10 +331,7 @@ paths:
           description: Command execution result
           content:
             application/json:
-              schema:
-                type: array
-                items:
-                  type: object
+              schema: {}
         '400':
           description: Bad request (e.g., invalid JSON or validation error)
         '500':
