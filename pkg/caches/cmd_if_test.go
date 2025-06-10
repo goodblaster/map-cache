@@ -22,7 +22,7 @@ func TestIF_TrueCondition(t *testing.T) {
 	res := cmd.Do(ctx, cache)
 
 	assert.NoError(t, res.Error)
-	assert.Equal(t, []any{"yes"}, res.Values)
+	assert.Equal(t, "yes", res.Value)
 }
 
 func TestIF_FalseCondition(t *testing.T) {
@@ -39,7 +39,7 @@ func TestIF_FalseCondition(t *testing.T) {
 	res := cmd.Do(ctx, cache)
 
 	assert.NoError(t, res.Error)
-	assert.Equal(t, []any{"no"}, res.Values)
+	assert.Equal(t, "no", res.Value)
 }
 
 func TestIF_ComparisonCondition(t *testing.T) {
@@ -56,7 +56,7 @@ func TestIF_ComparisonCondition(t *testing.T) {
 	res := cmd.Do(ctx, cache)
 
 	assert.NoError(t, res.Error)
-	assert.Equal(t, []any{"gt"}, res.Values)
+	assert.Equal(t, "gt", res.Value)
 }
 
 func TestIF_AllCondition(t *testing.T) {
@@ -82,7 +82,7 @@ func TestIF_AllCondition(t *testing.T) {
 	res := cmd.Do(ctx, cache)
 
 	assert.NoError(t, res.Error)
-	assert.Equal(t, []any{"all done"}, res.Values)
+	assert.Equal(t, "all done", res.Value)
 }
 
 func TestIF_AnyCondition(t *testing.T) {
@@ -108,7 +108,7 @@ func TestIF_AnyCondition(t *testing.T) {
 	res := cmd.Do(ctx, cache)
 
 	assert.NoError(t, res.Error)
-	assert.Equal(t, []any{"some done"}, res.Values)
+	assert.Equal(t, "some done", res.Value)
 }
 
 func TestIF_InvalidExpression(t *testing.T) {

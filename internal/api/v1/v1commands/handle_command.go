@@ -39,6 +39,6 @@ func handleCommand() echo.HandlerFunc {
 			return v1errors.ApiError(c, http.StatusInternalServerError, result.Error)
 		}
 
-		return c.JSON(http.StatusOK, result.Values)
+		return c.JSON(http.StatusOK, result.Value)
 	}
 }

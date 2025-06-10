@@ -20,8 +20,7 @@ func SetupRoutes(group *echo.Group) {
 	group.PUT("", handleReplaceBatch()) // Full replace batch
 
 	// ---
-	//group.PATCH("/:key", handlePatch()) // Partial update single
-	//group.PATCH("", handlePatchBatch()) // Partial update batch
+	group.PATCH("/:key", handlePatch()) // Partial update single
 
 	// --- Delete keys ---
 	group.DELETE("/:key", handleDelete())      // Delete single key
