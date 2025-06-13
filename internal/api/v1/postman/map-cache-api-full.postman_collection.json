@@ -481,6 +481,142 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Triggers",
+			"item": [
+				{
+					"name": "Create Trigger",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key\": \"key1\",\n  \"command\": {\n    \"type\": \"REPLACE\",\n    \"key\": \"key1\",\n    \"value\": \"value1\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/triggers",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"triggers"
+							]
+						},
+						"description": "Create a new trigger"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Trigger",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/triggers/{{id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"triggers",
+								"{{id}}"
+							]
+						},
+						"description": "Delete a trigger by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Replace Trigger",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id\": \"{{id}}\",\n  \"key\": \"key1\",\n  \"command\": {\n    \"type\": \"REPLACE\",\n    \"key\": \"key1\",\n    \"value\": \"new value\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/triggers/{{id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"triggers",
+								"{{id}}"
+							]
+						},
+						"description": "Replace an existing trigger"
+					},
+					"response": []
+				}
+			]
 		}
 	]
 }
