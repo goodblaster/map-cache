@@ -227,6 +227,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      summary: Partially update a key
+      description: Applies a list of patch operations to the key
+      tags: [keys]
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Key to patch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchRequest'
+      responses:
+        "200":
+          description: Patch operations applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchResponse'
+        "400":
+          description: Invalid request or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: One or more operations failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatchResponse'
     delete:
       summary: Delete a single key
       description: Deletes a single key from the specified cache
@@ -337,6 +373,95 @@ paths:
         '500':
           description: Internal server error (e.g., command execution failure)
 
+  /api/v1/triggers:
+    post:
+      summary: Create a new trigger
+      tags: [triggers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriggerCreateRequest'
+      responses:
+        "200":
+          description: Trigger created successfully
+          content:
+            application/json:
+              schema:
+                type: string   # OR object, see Fix 2
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/triggers/{id}:
+    delete:
+      summary: Delete a trigger
+      tags: [triggers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the trigger to delete
+      responses:
+        "204":
+          description: Trigger deleted successfully
+        "400":
+          description: Invalid ID or request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Replace an existing trigger
+      tags: [triggers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the trigger to replace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TriggerReplaceRequest'
+      responses:
+        "204":
+          description: Trigger replaced successfully
+        "400":
+          description: Invalid request or ID mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /admin/backup:
     post:
       summary: Backup a cache to a file
@@ -409,7 +534,7 @@ components:
           description: Name of the cache to create
         ttl:
           type: integer
-          description: TTL for the cache in seconds
+          description: TTL for the cache in milliseconds
 
     CreateKeysRequest:
       type: object
@@ -456,23 +581,23 @@ components:
 
     ReplaceBatchRequest:
       type: object
+      required: [entries]
       properties:
         entries:
           type: object
           additionalProperties: {}
-          description: Map of keys to their new values
         ttl:
           type: object
           additionalProperties:
             type: integer
-          description: Map of keys to their new TTLs (in seconds)
+          description: Map of keys to their new TTLs (in milliseconds)
 
     UpdateCacheRequest:
       type: object
       properties:
         ttl:
           type: integer
-          description: TTL for the cache in seconds
+          description: TTL for the cache in milliseconds
 
     CommandRequest:
       type: object
@@ -605,3 +730,64 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RawCommand'
+
+    PatchRequest:
+      type: object
+      required: [operations]
+      properties:
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatchOperation'
+        flags:
+          type: object
+          additionalProperties: true
+
+    PatchOperation:
+      type: object
+      required: [type, key]
+      properties:
+        type:
+          type: string
+          enum: [CREATE, REPLACE, DELETE, INC, APPEND, RESIZE]
+        key:
+          type: string
+        value:
+          nullable: true
+
+    PatchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatchOperationResponse'
+
+    PatchOperationResponse:
+      type: object
+      properties:
+        result:
+          nullable: true
+        error:
+          type: string
+          nullable: true
+
+    TriggerCreateRequest:
+      type: object
+      required: [key, command]
+      properties:
+        key:
+          type: string
+        command:
+          $ref: '#/components/schemas/Command'
+
+    TriggerReplaceRequest:
+      type: object
+      required: [ id, key, command ]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        command:
+          $ref: '#/components/schemas/Command'
