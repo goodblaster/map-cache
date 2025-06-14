@@ -22,5 +22,5 @@ func main() {
 	e := echo.New()
 	v1.SetupRoutes(e)
 	admin.SetupRoutes(e)
-	_ = e.Start(":8080")
+	_ = e.Start(config.WebAddress)
 }

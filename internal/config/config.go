@@ -4,10 +4,15 @@ import "os"
 
 var (
 	KeyDelimiter = "/"
+	WebAddress   = ":8080"
 )
 
 func Init() {
-	if os.Getenv("KEY_DELIMITER") != "" {
-		KeyDelimiter = os.Getenv("KEY_DELIMITER")
+	if val := os.Getenv("KEY_DELIMITER"); val != "" {
+		KeyDelimiter = val
+	}
+
+	if val := os.Getenv("LISTEN_ADDRESS"); val != "" {
+		WebAddress = val
 	}
 }
