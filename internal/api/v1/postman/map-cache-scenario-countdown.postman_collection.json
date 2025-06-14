@@ -1,0 +1,244 @@
+{
+	"info": {
+		"_postman_id": "756c9c05-38a8-4c90-8bc5-8177d2266230",
+		"name": "Scenario - Countdown with Trigger to Complete",
+		"description": "Creates a cache, sets up domains with countdown/status, triggers auto-completion, and checks final status.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39796492"
+	},
+	"item": [
+		{
+			"name": "Step 1 - Create Cache",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"name\": \"job-1234\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/caches",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"caches"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 2 - Create Initial Keys in Cache",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Cache-Name",
+						"value": "job-1234"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"entries\": {\n    \"domains\": {\n      \"domain-1\": {\n        \"status\": \"busy\",\n        \"countdown\": 2\n      },\n      \"domain-2\": {\n        \"status\": \"busy\",\n        \"countdown\": 2\n      }\n    },\n    \"status\": \"running\"\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/keys",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"keys"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 3 - Create Countdown Trigger",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Cache-Name",
+						"value": "job-1234"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"key\": \"domains/*/countdown\",\n  \"command\": {\n    \"type\": \"IF\",\n    \"condition\": \"${{domains/${{1}}/countdown}} <= 0\",\n    \"if_true\": {\n      \"type\": \"REPLACE\",\n      \"key\": \"domains/${{1}}/status\",\n      \"value\": \"complete\"\n    },\n    \"if_false\": {\n      \"type\": \"NOOP\"\n    }\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/triggers",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"triggers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 4 - Create Status Trigger",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Cache-Name",
+						"value": "job-1234"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"key\": \"domains/*/status\",\n  \"command\": {\n    \"type\": \"IF\",\n    \"condition\": \"all(${{domains/*/status}} == \\\"complete\\\")\",\n    \"if_true\": {\n      \"type\": \"REPLACE\",\n      \"key\": \"status\",\n      \"value\": \"complete\"\n    },\n    \"if_false\": {\n      \"type\": \"NOOP\"\n    }\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/triggers",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"triggers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 5 - Decrement Domain 1 Countdown",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Cache-Name",
+						"value": "job-1234"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"INC\",\n      \"key\": \"domains/domain-1/countdown\",\n      \"value\": -1\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{status}}\"\n    }\n  ]\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/commands/execute",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"commands",
+						"execute"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 6 - Decrement Domain 2 Countdown",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Cache-Name",
+						"value": "job-1234"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"INC\",\n      \"key\": \"domains/domain-2/countdown\",\n      \"value\": -1\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{status}}\"\n    }\n  ]\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/commands/execute",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"commands",
+						"execute"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Step 7 - Get Final Status",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Cache-Name",
+						"value": "job-1234"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8080/api/v1/keys/status",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"keys",
+						"status"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
