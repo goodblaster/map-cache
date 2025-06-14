@@ -33,7 +33,7 @@ func (p CommandInc) Do(ctx context.Context, cache *Cache) CmdResult {
 	}
 
 	f64 += p.Value
-	return CmdResult{Error: cache.Replace(ctx, p.Key, f64)}
+	return CmdResult{Value: f64, Error: cache.Replace(ctx, p.Key, f64)}
 }
 
 func ToFloat64(v any) (float64, bool) {
