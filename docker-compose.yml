@@ -1,6 +1,6 @@
 version: "3"
 services:
   map-cache:
-    image: yourdockerhubusername/map-cache:latest
+    image: goodblaster/map-cache:latest
     ports:
-      - "8080:8080"
+      - "80:8080"

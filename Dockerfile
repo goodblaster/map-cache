@@ -27,7 +27,9 @@ RUN chown appuser:appuser /usr/local/bin/map-cache
 USER appuser
 
 # Expose the app's port
-EXPOSE 8080
+EXPOSE 80
+
+ENV LISTEN_ADDRESS=":80"
 
 # Run the app
 ENTRYPOINT ["map-cache"]
