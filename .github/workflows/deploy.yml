@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Terraform
         uses: actions/checkout@v4
         with:
-          repository: your-username/goodblaster-infra
+          repository: goodblaster/infra
           path: infra
 
       - name: Set up AWS Credentials
