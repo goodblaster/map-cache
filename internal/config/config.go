@@ -1,6 +1,10 @@
 package config
 
-import "os"
+import (
+	"os"
+
+	"github.com/goodblaster/logos"
+)
 
 var (
 	KeyDelimiter = "/"
@@ -15,4 +19,9 @@ func Init() {
 	if val := os.Getenv("LISTEN_ADDRESS"); val != "" {
 		WebAddress = val
 	}
+
+	logos.
+		With("KEY_DELIMITER", KeyDelimiter).
+		With("LISTEN_ADDRESS", WebAddress).
+		Debug("Configuration initialized")
 }
