@@ -26,7 +26,7 @@ USER root
 EXPOSE 80
 
 # Listen in port 80
-LISTEN_ADDRESS=":80"
+ENV LISTEN_ADDRESS=":80"
 
 # Run the app
 ENTRYPOINT ["map-cache"]
