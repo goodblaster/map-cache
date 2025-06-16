@@ -16,20 +16,17 @@ RUN go build -o map-cache ./cmd/cache/main.go
 # Stage 2: Minimal Ubuntu image for runtime
 FROM ubuntu:22.04
 
-# Create non-root user
-RUN useradd -m appuser
-
 # Copy the binary from the builder stage
 COPY --from=builder /app/map-cache /usr/local/bin/map-cache
 
-# Set ownership and switch to non-root user
-RUN chown appuser:appuser /usr/local/bin/map-cache
-USER appuser
+# Run as root for port 80
+USER root
 
 # Expose the app's port
 EXPOSE 80
 
-ENV LISTEN_ADDRESS=":80"
+# Listen in port 80
+LISTEN_ADDRESS=":80"
 
 # Run the app
 ENTRYPOINT ["map-cache"]
