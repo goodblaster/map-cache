@@ -16,6 +16,7 @@ import (
 
 func main() {
 	config.Init()
+
 	err := caches.AddCache(caches.DefaultName)
 	if err != nil {
 		logos.WithError(err).Fatal("failed to add default cache")

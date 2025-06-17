@@ -28,5 +28,8 @@ EXPOSE 80
 # Listen in port 80
 ENV LISTEN_ADDRESS=":80"
 
+# Set the default log format to JSON
+ENV LOG_FORMAT="json"
+
 # Run the app
 ENTRYPOINT ["map-cache"]
