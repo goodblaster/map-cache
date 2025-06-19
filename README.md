@@ -1,7 +1,10 @@
 # map-cache
 
+### API documentation and demo at http://cache.goodblaster.org/api/v1/
+
 A map-based, in-memory caching service with an HTTP API.
 Built with Go, designed for local or distributed caching scenarios where simple map-based storage and atomic operations are needed.
+
 
 Supports:
 
