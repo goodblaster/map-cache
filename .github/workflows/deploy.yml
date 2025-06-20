@@ -15,7 +15,7 @@ jobs:
     env:
       CLUSTER_NAME: main-cluster
       SERVICE_NAME: map-cache-service
-      FAMILY: map-cache
+      FAMILY: map-cache-task
       CONTAINER_NAME: map-cache
       AWS_REGION: us-west-2
 
