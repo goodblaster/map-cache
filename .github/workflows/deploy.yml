@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: goodblaster/infra
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           path: infra
 
       - name: Set up AWS Credentials
