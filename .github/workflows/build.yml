@@ -3,6 +3,12 @@ name: Build and Publish Map Cache
 on:
   release:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref (branch or tag) to build"
+        required: true
+        default: "main"
 
 jobs:
   build-and-push:
@@ -13,6 +19,8 @@ jobs:
       # Step 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Important! Needed for full git history
 
       # Step 2: Set up Docker Buildx
       - name: Set up Docker Buildx
@@ -25,7 +33,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Step 4: Build and push multi-arch Docker image
+      # Step 4: Extract build metadata
+      - name: Get Git Metadata
+        id: meta
+        run: |
+          echo "VERSION=$(git describe --tags --always)" >> $GITHUB_ENV
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
+
+      # Step 5: Build and push multi-arch Docker image
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -35,3 +51,7 @@ jobs:
           tags: |
             goodblaster/map-cache:latest
             goodblaster/map-cache:${{ github.event.release.tag_name }}
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            COMMIT=${{ env.COMMIT }}
+            DATE=${{ env.DATE }}
