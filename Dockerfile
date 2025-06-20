@@ -11,7 +11,16 @@ RUN go mod download
 
 # Copy source and build
 COPY . .
-RUN go build -o map-cache ./cmd/cache/main.go
+
+# Get build metadata directly from git and the current time
+RUN VERSION=$(git describe --tags --always) && \
+    COMMIT=$(git rev-parse --short HEAD) && \
+    DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) && \
+    go build -ldflags "\
+        -X 'your/module/path/build.Version=$VERSION' \
+        -X 'your/module/path/build.Commit=$COMMIT' \
+        -X 'your/module/path/build.Date=$DATE'" \
+        -o map-cache ./cmd/cache/main.go
 
 # Stage 2: Minimal Ubuntu image for runtime
 FROM ubuntu:22.04
