@@ -37,11 +37,16 @@ jobs:
       - name: Get Git Metadata
         id: meta
         run: |
-          echo "VERSION=$(git describe --tags --always)" >> $GITHUB_ENV
-          echo "COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-          echo "DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
+          VERSION=$(git describe --tags --always)
+          COMMIT=$(git rev-parse --short HEAD)
+          DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          SAFE_TAG=$(echo "${{ github.event.release.tag_name || github.event.inputs.ref || 'manual' }}" | tr '/' '-' | tr -cd '[:alnum:]._:-')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "COMMIT=$COMMIT" >> $GITHUB_ENV
+          echo "DATE=$DATE" >> $GITHUB_ENV
+          echo "SAFE_TAG=$SAFE_TAG" >> $GITHUB_ENV
 
-      # Step 5: Build and push multi-arch Docker image
+      # Step 5: Build and push Docker image
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -50,7 +55,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             goodblaster/map-cache:latest
-            goodblaster/map-cache:${{ github.event.release.tag_name || github.event.inputs.ref || 'manual' }}
+            goodblaster/map-cache:${{ env.SAFE_TAG }}
           build-args: |
             VERSION=${{ env.VERSION }}
             COMMIT=${{ env.COMMIT }}
