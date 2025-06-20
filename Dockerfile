@@ -15,9 +15,9 @@ RUN go mod download
 COPY . .
 
 RUN go build -ldflags "\
-    -X 'your/module/path/build.Version=${VERSION}' \
-    -X 'your/module/path/build.Commit=${COMMIT}' \
-    -X 'your/module/path/build.Date=${DATE}'" \
+    -X 'github.com/goodblaster/map-cache/internal/build.Version=${VERSION}' \
+    -X 'github.com/goodblaster/map-cache/internal/build.Commit=${COMMIT}' \
+    -X 'github.com/goodblaster/map-cache/internal/build.Date=${DATE}'" \
     -o map-cache ./cmd/cache/main.go
 
 # Stage 2: Runtime image
