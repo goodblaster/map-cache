@@ -12,28 +12,107 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout Terraform
-        uses: actions/checkout@v4
-        with:
-          repository: goodblaster/infra
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          path: infra
+    env:
+      CLUSTER_NAME: main-cluster
+      SERVICE_NAME: map-cache-service
+      FAMILY: map-cache
+      CONTAINER_NAME: map-cache
+      AWS_REGION: us-west-2
 
-      - name: Set up AWS Credentials
+    steps:
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.6  # or whatever version you're using
+      - name: Login to Amazon ECR (optional if pulling from Docker Hub)
+        run: echo "Skipping ECR login since we're using Docker Hub"
 
-      - name: Terraform Init and Apply
-        working-directory: infra
+      - name: Register new ECS task definition
+        id: register
         run: |
-          terraform init
-          terraform apply -auto-approve -var="docker_image=goodblaster/map-cache:${{ github.event.inputs.docker_image_tag }}"
+          IMAGE="goodblaster/map-cache:${{ github.event.inputs.docker_image_tag }}"
+
+          # Fetch current task definition
+          aws ecs describe-task-definition --task-definition "$FAMILY" --query 'taskDefinition' > current-task.json
+
+          # Update image in container definition
+          cat current-task.json | jq \
+            --arg IMAGE "$IMAGE" \
+            --arg NAME "$CONTAINER_NAME" \
+            '
+              {
+                family: .family,
+                executionRoleArn: .executionRoleArn,
+                taskRoleArn: .taskRoleArn,
+                networkMode: .networkMode,
+                containerDefinitions: (
+                  .containerDefinitions | map(
+                    if .name == $NAME then .image = $IMAGE | . else . end
+                  )
+                ),
+                requiresCompatibilities: .requiresCompatibilities,
+                cpu: .cpu,
+                memory: .memory
+              }
+            ' > new-task-def.json
+
+          # Register new task definition revision
+          TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json | jq -r .taskDefinition.taskDefinitionArn)
+
+          echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> "$GITHUB_ENV"
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster "$CLUSTER_NAME" \
+            --service "$SERVICE_NAME" \
+            --task-definition "$TASK_DEF_ARN"
+
+      - name: Wait for ECS service to stabilize
+        run: |
+          aws ecs wait services-stable \
+            --cluster "$CLUSTER_NAME" \
+            --services "$SERVICE_NAME"
+
+      - name: Get public IP of latest running task
+        run: |
+          TASK_ARN=$(aws ecs list-tasks \
+            --cluster "$CLUSTER_NAME" \
+            --service-name "$SERVICE_NAME" \
+            --desired-status RUNNING \
+            --query 'taskArns[0]' \
+            --output text)
+
+          echo "Latest Task ARN: $TASK_ARN"
+
+          ENI_ID=$(aws ecs describe-tasks \
+            --cluster "$CLUSTER_NAME" \
+            --tasks "$TASK_ARN" \
+            --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' \
+            --output text)
+
+          echo "ENI ID: $ENI_ID"
+
+          PUBLIC_IP=""
+          for i in {1..10}; do
+            PUBLIC_IP=$(aws ec2 describe-network-interfaces \
+              --network-interface-ids "$ENI_ID" \
+              --query 'NetworkInterfaces[0].Association.PublicIp' \
+              --output text)
+
+            if [[ "$PUBLIC_IP" != "None" && "$PUBLIC_IP" != "null" ]]; then
+              break
+            fi
+
+            echo "Waiting for public IP to be assigned..."
+            sleep 10
+          done
+
+          echo "Public IP: $PUBLIC_IP"
+          echo "PUBLIC_IP=$PUBLIC_IP" >> "$GITHUB_ENV"
+
+      - name: Output app address
+        run: echo "App deployed at http://${{ env.PUBLIC_IP }}"
