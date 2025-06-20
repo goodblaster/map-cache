@@ -40,29 +40,34 @@ jobs:
 
           # Update image in container definition
           cat current-task.json | jq \
-            --arg IMAGE "$IMAGE" \
-            --arg NAME "$CONTAINER_NAME" \
-            '
-              {
-                family: .family,
-                executionRoleArn: .executionRoleArn,
-                taskRoleArn: .taskRoleArn,
-                networkMode: .networkMode,
-                containerDefinitions: (
-                  .containerDefinitions | map(
-                    if .name == $NAME then .image = $IMAGE | . else . end
-                  )
-                ),
-                requiresCompatibilities: .requiresCompatibilities,
-                cpu: .cpu,
-                memory: .memory
-              }
-            ' > new-task-def.json
+          --arg IMAGE "$IMAGE" \
+          --arg NAME "$CONTAINER_NAME" \
+          '
+            .containerDefinitions |= map(
+              if .name == $NAME then .image = $IMAGE | . else . end
+            ) |
+            {
+              family,
+              networkMode,
+              executionRoleArn,
+              containerDefinitions,
+              requiresCompatibilities,
+              cpu,
+              memory
+            } +
+            (if .taskRoleArn != null then {taskRoleArn} else {} end)
+          ' > new-task-def.json
 
           # Register new task definition revision
           TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://new-task-def.json | jq -r .taskDefinition.taskDefinitionArn)
 
           echo "TASK_DEF_ARN=$TASK_DEF_ARN" >> "$GITHUB_ENV"
+
+          if [[ -z "$TASK_DEF_ARN" || "$TASK_DEF_ARN" == "null" ]]; then
+            echo "ERROR: Failed to register task definition."
+            cat new-task-def.json
+            exit 1
+          fi
 
       - name: Update ECS service
         run: |
