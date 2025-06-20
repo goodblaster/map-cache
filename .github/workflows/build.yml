@@ -8,7 +8,7 @@ on:
       ref:
         description: "Git ref (branch or tag) to build"
         required: true
-        default: "main"
+        default: "master"
 
 jobs:
   build-and-push:
