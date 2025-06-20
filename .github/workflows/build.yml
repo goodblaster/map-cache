@@ -50,7 +50,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: |
             goodblaster/map-cache:latest
-            goodblaster/map-cache:${{ github.event.release.tag_name }}
+            goodblaster/map-cache:${{ github.event.release.tag_name || github.event.inputs.ref || 'manual' }}
           build-args: |
             VERSION=${{ env.VERSION }}
             COMMIT=${{ env.COMMIT }}
