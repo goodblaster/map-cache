@@ -1,6 +1,7 @@
 # map-cache
 
-### API documentation and demo at http://cache.goodblaster.org/api/v1/
+### API documentation and demo at ...
+Demo removed due to malicious traffic. Download and run the service to view Swagger docs.
 
 A map-based, in-memory caching service with an HTTP API. Built with Go, designed for local or distributed caching scenarios where simple map-based storage and atomic operations are needed.
 
