@@ -28,6 +28,29 @@ go test -v -run Test_Big ./pkg/caches
 
 # Run integration tests
 go test -v ./tests/...
+
+# Run all benchmarks (skip regular tests with -run=^$)
+go test -bench=. -benchmem -run=^$ ./...
+
+# Run benchmarks for a specific package
+go test -bench=. -benchmem -run=^$ ./pkg/caches
+go test -bench=. -benchmem -run=^$ ./pkg/containers
+
+# Run specific benchmark
+go test -bench=BenchmarkCache_Get -benchmem -run=^$ ./pkg/caches
+
+# Run benchmarks with custom duration (faster)
+go test -bench=. -benchmem -run=^$ -benchtime=500ms ./pkg/caches
+
+# Run benchmarks and save results for comparison
+go test -bench=. -benchmem -run=^$ ./pkg/caches > bench-old.txt
+# After making changes:
+go test -bench=. -benchmem -run=^$ ./pkg/caches > bench-new.txt
+# Compare with benchstat (install: go install golang.org/x/perf/cmd/benchstat@latest)
+benchstat bench-old.txt bench-new.txt
+
+# Note: The -run=^$ flag skips regular tests and only runs benchmarks.
+# Without it, you'll see test log output (which includes expected error messages from error-condition tests).
 ```
 
 ## Configuration
@@ -107,6 +130,10 @@ The service is configured via environment variables:
 - `big_test.go`: Complex scenario test with 100+ domains, cascading triggers, and countdown logic
 - `stress_test.go`: Concurrent access tests
 - Integration tests in `tests/` directory
+- Benchmark tests (`*_benchmark_test.go`):
+  - `cache_benchmark_test.go`: Benchmarks for core cache operations (Get, Create, Replace, Delete, Increment, etc.)
+  - `cmd_benchmark_test.go`: Benchmarks for command execution (INC, REPLACE, IF, FOR, interpolation, etc.)
+  - `gabs_map_benchmark_test.go`: Benchmarks for container operations and wildcard pattern matching
 - Use `testify/assert` for assertions
 
 ## Key Patterns

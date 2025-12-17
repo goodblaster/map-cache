@@ -810,6 +810,32 @@ go test -v -run TestStress ./pkg/caches
 
 The `Test_Big` test simulates a countdown scenario with 100+ domains, demonstrating cascading completion logic.
 
+### Benchmarks
+
+Performance benchmarks are available to measure the speed of cache operations:
+
+```bash
+# Run all benchmarks (skip regular tests)
+go test -bench=. -benchmem -run=^$ ./...
+
+# Run cache operation benchmarks
+go test -bench=. -benchmem -run=^$ ./pkg/caches
+
+# Run specific benchmark
+go test -bench=BenchmarkCache_Get -benchmem -run=^$ ./pkg/caches
+
+# Run benchmarks with shorter duration (faster)
+go test -bench=. -benchmem -run=^$ -benchtime=500ms ./pkg/caches
+```
+
+**Note**: The `-run=^$` flag skips regular tests and only runs benchmarks, avoiding test log output.
+
+Available benchmarks include:
+- **Cache Operations**: Create, Get, Replace, Delete, Increment, nested operations, batch operations
+- **Command Execution**: INC, REPLACE, IF, FOR, value interpolation, complex scenarios
+- **Wildcard Patterns**: Pattern matching with single/multiple wildcards
+- **Container Operations**: Array operations, data retrieval, wildcard key matching
+
 ---
 
 ## 📦 Postman Collections
