@@ -5,12 +5,10 @@ github.com/Knetic/govaluate v3.0.0+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8L
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/goodblaster/errors v0.0.4 h1:iyxBuNyhE2AHMqZ9eajpWC9C909OLZQ7rpSHE1+1SfA=
-github.com/goodblaster/errors v0.0.4/go.mod h1:7mOJtwZZ8ZOGzUPOLDR6iNqxQiBwBQUWAsMox2HLuDY=
-github.com/goodblaster/go-mht v0.0.0-20250621215110-4fab332a4c78 h1:9dkup8ggLEU9A/yp9+o2bNbHZSvUJ0kmq+g3CvBPjD4=
-github.com/goodblaster/go-mht v0.0.0-20250621215110-4fab332a4c78/go.mod h1:oDwkljoXpVxuoW+wilJ3EeYjeqsGT3xjOUZXikMt/2g=
-github.com/goodblaster/logos v0.1.3 h1:+ty5fQt8FxZfF4bG04M6UIEADvUnsMsynB49dxXTz2g=
-github.com/goodblaster/logos v0.1.3/go.mod h1:m6ewgVADd401e7F4630nczg6LL4MPi9UoE4jL+X8fmY=
+github.com/goodblaster/errors v0.1.0 h1:3ZWmlbJgEF3Z3etFFHP3TdhwWU1ODxTAHWf31LHY9K4=
+github.com/goodblaster/errors v0.1.0/go.mod h1:7mOJtwZZ8ZOGzUPOLDR6iNqxQiBwBQUWAsMox2HLuDY=
+github.com/goodblaster/logos v0.2.0 h1:WiSrfycj+rzrlTlPsj7QnQMilKAYUi5KXj5ZoDQ8ZY8=
+github.com/goodblaster/logos v0.2.0/go.mod h1:m6ewgVADd401e7F4630nczg6LL4MPi9UoE4jL+X8fmY=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=

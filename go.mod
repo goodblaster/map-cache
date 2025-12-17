@@ -5,8 +5,8 @@ go 1.23.7
 require (
 	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/Knetic/govaluate v3.0.0+incompatible
-	github.com/goodblaster/errors v0.0.4
-	github.com/goodblaster/logos v0.1.3
+	github.com/goodblaster/errors v0.1.0
+	github.com/goodblaster/logos v0.2.0
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/stretchr/testify v1.10.0
@@ -14,7 +14,6 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/goodblaster/go-mht v0.0.0-20250621215110-4fab332a4c78 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
