@@ -3,6 +3,7 @@ package v1commands
 import (
 	"net/http"
 
+	"github.com/goodblaster/errors"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
@@ -13,6 +14,9 @@ type commandRequest struct {
 }
 
 func (req commandRequest) Validate() error {
+	if len(req.Commands) == 0 {
+		return errors.New("at least one command is required")
+	}
 	return nil
 }
 

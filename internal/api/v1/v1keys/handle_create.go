@@ -17,7 +17,23 @@ type createKeysRequest struct {
 }
 
 // Validate - Validates the createKeysRequest.
-func (req createKeysRequest) Validate() error { return nil }
+func (req createKeysRequest) Validate() error {
+	if len(req.Entries) == 0 {
+		return errors.New("at least one entry is required")
+	}
+	for key := range req.Entries {
+		if key == "" {
+			return errors.New("key cannot be empty")
+		}
+	}
+	// Validate TTL keys exist in Entries
+	for key := range req.TTL {
+		if _, exists := req.Entries[key]; !exists {
+			return errors.Newf("TTL specified for non-existent key: %s", key)
+		}
+	}
+	return nil
+}
 
 // handleCreate creates new entries in a cache.
 func handleCreate() echo.HandlerFunc {
