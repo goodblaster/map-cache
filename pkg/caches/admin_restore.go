@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/goodblaster/errors"
+	"github.com/goodblaster/logos"
 )
 
 func Restore(ctx context.Context, cacheName string, inFile string) error {
@@ -48,7 +49,11 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 	for key, ttl := range backup.KeyExpirations {
 		exp := time.Unix(ttl, 0)
 		cache.keyExps[key] = FutureFunc(int64(exp.Sub(time.Now()).Milliseconds()), func() {
-			_ = cache.Delete(ctx, key)
+			// Delete the key when TTL expires
+			// Log errors but don't fail - TTL cleanup is best-effort
+			if err := cache.Delete(ctx, key); err != nil {
+				logos.WithError(err).Warnf("failed to delete expired key %s during restore", key)
+			}
 		})
 	}
 
@@ -66,7 +71,10 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 	}
 
 	// Delete the existing cache if it exists, and its expirations.
-	_ = DeleteCache(cacheName)
+	// Log errors but don't fail - deletion is best-effort before restore
+	if err := DeleteCache(cacheName); err != nil {
+		logos.WithError(err).Warnf("failed to delete existing cache %s before restore", cacheName)
+	}
 
 	caches.Store(cacheName, cache)
 	return nil

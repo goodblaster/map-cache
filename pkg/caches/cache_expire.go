@@ -2,6 +2,8 @@ package caches
 
 import (
 	"context"
+
+	"github.com/goodblaster/logos"
 )
 
 // SetKeyTTL - set the expiration timer for a key.
@@ -15,7 +17,11 @@ func (cache *Cache) SetKeyTTL(ctx context.Context, key string, milliseconds int6
 
 	// Create a new timer.
 	cache.keyExps[key] = FutureFunc(milliseconds, func() {
-		_ = cache.Delete(ctx, key)
+		// Delete the key when TTL expires
+		// Log errors but don't fail - TTL cleanup is best-effort
+		if err := cache.Delete(ctx, key); err != nil {
+			logos.WithError(err).Warnf("failed to delete expired key %s", key)
+		}
 		delete(cache.keyExps, key)
 	})
 
