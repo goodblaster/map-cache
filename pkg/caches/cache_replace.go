@@ -22,7 +22,11 @@ func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
 		return errors.Wrap(err, "could not set value")
 	}
 
-	_ = cache.OnChange(ctx, key, oldValue, value)
+	// Fire triggers - return error if trigger execution fails (including infinite loops)
+	if err := cache.OnChange(ctx, key, oldValue, value); err != nil {
+		return errors.Wrap(err, "trigger execution failed")
+	}
+
 	return nil
 }
 

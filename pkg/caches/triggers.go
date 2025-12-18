@@ -7,6 +7,18 @@ import (
 	"github.com/goodblaster/errors"
 )
 
+// Trigger recursion limits
+const (
+	// MaxTriggerDepth is the maximum number of nested trigger executions allowed.
+	// This prevents infinite loops where trigger A fires trigger B which fires A again.
+	MaxTriggerDepth = 10
+)
+
+// Context key type for trigger depth tracking
+type triggerDepthKey struct{}
+
+var triggerDepthContextKey = triggerDepthKey{}
+
 // Trigger - A trigger is a command that is executed when a specified key is modified.
 // For now, this command is only called on-change. Future versions may support
 // additional commands like on-delete.
@@ -18,10 +30,20 @@ type Trigger struct {
 
 // OnChange gets called whenever there was a successful data replacement.
 // All trigger keys are checked, and for each match, the trigger command is called.
-// Initially, this will be immediately recursive. Future versions may complete a full
-// command sequence before delayed recursion. Future version should also seek to
-// prevent infinite recursion.
+//
+// INFINITE LOOP PROTECTION:
+// Triggers can recursively fire other triggers. To prevent infinite loops,
+// we track the recursion depth and limit it to MaxTriggerDepth (10 levels).
+// If the depth limit is exceeded, an error is returned.
 func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newValue any) error {
+	// Check current trigger depth
+	depth := getTriggerDepth(ctx)
+	if depth > MaxTriggerDepth {
+		return errors.Newf("trigger recursion depth limit exceeded (max: %d) - possible infinite loop detected", MaxTriggerDepth)
+	}
+
+	// Increment depth for nested trigger executions
+	ctx = context.WithValue(ctx, triggerDepthContextKey, depth+1)
 	for triggerKey, triggers := range cache.triggers {
 		matchingKeys := cache.KeysMatch(ctx, triggerKey, key)
 
@@ -90,4 +112,13 @@ func ExtractWildcardMatches(key, triggerKey string) ([]string, error) {
 		}
 	}
 	return matches, nil
+}
+
+// getTriggerDepth retrieves the current trigger recursion depth from context.
+// Returns 0 if not set (first trigger execution).
+func getTriggerDepth(ctx context.Context) int {
+	if depth, ok := ctx.Value(triggerDepthContextKey).(int); ok {
+		return depth
+	}
+	return 0
 }

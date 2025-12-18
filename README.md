@@ -519,6 +519,12 @@ Content-Type: application/json
 - Triggers execute in the order they were created
 - Trigger commands can modify other keys, which may fire additional triggers (cascading)
 
+**⚠️ Infinite Loop Protection:**
+- Trigger recursion is automatically limited to 10 levels deep
+- If a trigger chain exceeds this depth (e.g., trigger A fires trigger B which fires A again), an error is returned
+- This prevents server crashes from runaway trigger loops
+- Design triggers carefully to avoid circular dependencies
+
 ---
 
 ## ⏰ Expiration (TTL)

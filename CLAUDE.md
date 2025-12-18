@@ -99,6 +99,10 @@ The service is configured via environment variables:
 - Pattern-based: Triggers match keys using wildcards (e.g., `domains/*/countdown`)
 - Execution: Fires after key updates complete, can cascade to other triggers
 - Storage: Per-cache map of pattern -> trigger list, ordered by creation time
+- **Infinite Loop Protection**: Trigger recursion is limited to `MaxTriggerDepth` (10 levels) to prevent infinite loops
+  - If trigger A fires trigger B which fires trigger A again, the cycle is detected and an error is returned
+  - The depth limit ensures the server doesn't crash from runaway trigger chains
+  - Example: A trigger that modifies its own watched key will be stopped after 10 iterations
 
 **6. TTL/Expiration**
 - Two levels: per-key TTL and cache-level TTL
@@ -167,9 +171,14 @@ defer cache.Release("operation-name")
 ## Important Implementation Notes
 
 - **Thread Safety**: All cache operations are mutex-protected; never hold multiple cache locks simultaneously
+  - For HTTP API: Middleware automatically handles `Acquire(tag)`/`Release(tag)`
+  - For direct library use: **MUST** manually call `Acquire(tag)` and `defer cache.Release(tag)`
 - **Tag Enforcement**: Cache acquire/release tags must match; panics on mismatch to catch locking bugs
 - **Wildcard Performance**: Pattern matching iterates all keys; use specific paths when possible
-- **Trigger Cascading**: Triggers can modify keys that fire other triggers; be careful of infinite loops
+- **Trigger Cascading**: Triggers can modify keys that fire other triggers
+  - **Infinite Loop Protection**: Recursion limited to 10 levels (`MaxTriggerDepth`)
+  - Error returned if limit exceeded: `"trigger recursion depth limit exceeded (max: 10) - possible infinite loop detected"`
+  - Safe trigger patterns: Ensure trigger chains don't create cycles (A→B→A)
 - **TTL Precision**: TTL values are in milliseconds throughout the codebase
 - **Context Propagation**: Commands receive `context.Context` for cancellation support
 
