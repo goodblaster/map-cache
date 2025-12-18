@@ -10,6 +10,9 @@ import (
 	"github.com/Knetic/govaluate"
 )
 
+// keyIdentifierReplacer is reused for converting keys to identifiers
+var keyIdentifierReplacer = strings.NewReplacer(".", "_", "/", "_", "-", "_")
+
 type CommandIf struct {
 	Condition string  `json:"condition,required"`
 	IfTrue    Command `json:"if_true,required"`
@@ -92,28 +95,39 @@ func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx cont
 			return "false" // or error
 		}
 
-		var parts []string
-		for _, key := range keys {
+		// Use strings.Builder for efficient string concatenation
+		var builder strings.Builder
+		join := " || "
+		if mode == "all" {
+			join = " && "
+		}
+
+		builder.WriteByte('(')
+		for i, key := range keys {
 			varName := keyToIdentifier(key)
 			val, err := cache.Get(ctx, key)
 			if err != nil {
 				val = nil
 			}
 			parameters[varName] = val
-			parts = append(parts, fmt.Sprintf("%s %s %s", varName, op, right))
-		}
 
-		join := " || "
-		if mode == "all" {
-			join = " && "
+			if i > 0 {
+				builder.WriteString(join)
+			}
+			builder.WriteString(varName)
+			builder.WriteByte(' ')
+			builder.WriteString(op)
+			builder.WriteByte(' ')
+			builder.WriteString(right)
 		}
-		return "(" + strings.Join(parts, join) + ")"
+		builder.WriteByte(')')
+
+		return builder.String()
 	}), nil
 }
 
 func keyToIdentifier(key string) string {
-	replacer := strings.NewReplacer(".", "_", "/", "_", "-", "_")
-	return replacer.Replace(key)
+	return keyIdentifierReplacer.Replace(key)
 }
 
 func (c *CommandIf) UnmarshalJSON(data []byte) error {

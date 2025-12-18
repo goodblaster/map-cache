@@ -130,7 +130,8 @@ func (gMap *GabsMap) WildKeys(ctx context.Context, path string) []string {
 			case []interface{}:
 				for i := range data {
 					child := node.Index(i)
-					walk(child, idx+1, append(currentPath, fmt.Sprintf("%d", i)))
+					// Use strconv.Itoa instead of fmt.Sprintf for better performance
+					walk(child, idx+1, append(currentPath, strconv.Itoa(i)))
 				}
 			}
 		} else {

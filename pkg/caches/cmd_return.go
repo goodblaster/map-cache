@@ -86,7 +86,12 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 		if err != nil {
 			return nil, fmt.Errorf("interpolation error for key %q: %w", key, err)
 		}
-		builder.WriteString(fmt.Sprintf("%v", val))
+		// Optimize: avoid fmt.Sprintf if value is already a string
+		if str, ok := val.(string); ok {
+			builder.WriteString(str)
+		} else {
+			builder.WriteString(fmt.Sprintf("%v", val))
+		}
 
 		lastIndex = end
 	}
