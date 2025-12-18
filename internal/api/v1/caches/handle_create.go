@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/goodblaster/errors"
-	"github.com/goodblaster/logos"
 	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
+	"github.com/goodblaster/map-cache/internal/log"
 	"github.com/labstack/echo/v4"
 )
 
@@ -44,7 +44,7 @@ func handleCreateCache() echo.HandlerFunc {
 		// Expiration
 		if req.TTL != nil {
 			if err := caches.SetCacheTTL(req.Name, *req.TTL); err != nil {
-				logos.WithError(err).Error("could not set cache expiration")
+				log.WithError(err).Error("could not set cache expiration")
 			}
 		}
 

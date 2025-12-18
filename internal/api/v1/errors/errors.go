@@ -6,8 +6,9 @@ import (
 	"strings"
 
 	"github.com/goodblaster/errors"
-	"github.com/goodblaster/logos"
 	"github.com/labstack/echo/v4"
+
+	"github.com/goodblaster/map-cache/internal/log"
 )
 
 // Error - in an error stack, this is the error that will be returned to the user.
@@ -41,16 +42,16 @@ func WebError(err error) error {
 func ApiError(c echo.Context, code int, errmsg any) error {
 	err, _ := errmsg.(error)
 	resp := NewErrorResponse(code, errmsg)
-	log := logos.With("request", c.Request().RequestURI).With("status", code)
+	logger := log.With("request", c.Request().RequestURI).With("status", code)
 
 	if err != nil {
 		resp.Internal = err
 		resp.Message = WebError(err).Error()
-		log.WithError(err).Error(errmsg)
+		logger.WithError(err).Error(fmt.Sprintf("%v", errmsg))
 		return c.JSON(code, resp)
 	}
 
-	log.Error(errmsg)
+	logger.Error(fmt.Sprintf("%v", errmsg))
 	return c.JSON(code, resp)
 }
 

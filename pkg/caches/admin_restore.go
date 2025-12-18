@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/goodblaster/errors"
-	"github.com/goodblaster/logos"
+	"github.com/goodblaster/map-cache/internal/log"
 )
 
 func Restore(ctx context.Context, cacheName string, inFile string) error {
@@ -53,7 +53,7 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 
 		// Skip expired keys - they're already expired, no need to set a timer
 		if duration <= 0 {
-			logos.Warnf("skipping expired key %s during restore (expired %d ms ago)", key, -duration)
+			log.Warnf("skipping expired key %s during restore (expired %d ms ago)", key, -duration)
 			continue
 		}
 
@@ -61,7 +61,7 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 			// Delete the key when TTL expires
 			// Log errors but don't fail - TTL cleanup is best-effort
 			if err := cache.Delete(ctx, key); err != nil {
-				logos.WithError(err).Warnf("failed to delete expired key %s during restore", key)
+				log.WithError(err).Warnf("failed to delete expired key %s during restore", key)
 			}
 		})
 	}
@@ -82,7 +82,7 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 	// Delete the existing cache if it exists, and its expirations.
 	// Log errors but don't fail - deletion is best-effort before restore
 	if err := DeleteCache(cacheName); err != nil {
-		logos.WithError(err).Warnf("failed to delete existing cache %s before restore", cacheName)
+		log.WithError(err).Warnf("failed to delete existing cache %s before restore", cacheName)
 	}
 
 	caches.Store(cacheName, cache)

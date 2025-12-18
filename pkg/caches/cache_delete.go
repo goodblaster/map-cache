@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/goodblaster/logos"
+	"github.com/goodblaster/map-cache/internal/log"
 )
 
 func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
@@ -19,7 +19,7 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 			if i, err := strconv.Atoi(lastStr); err == nil {
 				if err := cache.cmap.ArrayRemove(ctx, i, path[:len(path)-1]...); err != nil {
 					// Log but don't fail - deletion is best-effort for array elements
-					logos.WithError(err).Warnf("failed to remove array element at index %d for key %s", i, key)
+					log.WithError(err).Warnf("failed to remove array element at index %d for key %s", i, key)
 				}
 				continue
 			}
@@ -35,7 +35,7 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 
 		// Delete the key - log errors but don't fail (deletion is best-effort)
 		if err := cache.cmap.Delete(ctx, path...); err != nil {
-			logos.WithError(err).Warnf("failed to delete key %s", key)
+			log.WithError(err).Warnf("failed to delete key %s", key)
 		}
 	}
 	return nil

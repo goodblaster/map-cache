@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/goodblaster/errors"
-	"github.com/goodblaster/logos"
 	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
+	"github.com/goodblaster/map-cache/internal/log"
 	"github.com/labstack/echo/v4"
 )
 
@@ -79,12 +79,12 @@ func handleReplaceBatch() echo.HandlerFunc {
 		for key, ttl := range req.TTL {
 			if ttl == nil {
 				if err := cache.CancelKeyTTL(c.Request().Context(), key); err != nil {
-					logos.WithError(err).Warnf("could not cancel cache expiration for key %q", key)
+					log.WithError(err).Warnf("could not cancel cache expiration for key %q", key)
 				}
 				continue
 			}
 			if err := cache.SetKeyTTL(c.Request().Context(), key, *ttl); err != nil {
-				logos.WithError(err).Warnf("could not set cache expiration for key %q", key)
+				log.WithError(err).Warnf("could not set cache expiration for key %q", key)
 			}
 		}
 

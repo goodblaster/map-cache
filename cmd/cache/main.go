@@ -17,17 +17,32 @@ import (
 	v1 "github.com/goodblaster/map-cache/internal/api/v1"
 	"github.com/goodblaster/map-cache/internal/build"
 	"github.com/goodblaster/map-cache/internal/config"
+	"github.com/goodblaster/map-cache/internal/log"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
-	config.Init()
+	// Configure and create logger (this is the ONLY place logos is used directly)
+	var formatter logos.Formatter
+	if logFormat := os.Getenv("LOG_FORMAT"); logFormat == "json" {
+		formatter = logos.JSONFormatter()
+	} else {
+		formatter = logos.TextFormatter()
+	}
+
+	// Create the logos logger and wrap in adapter
+	// Adapter needed because logos methods return logos.Logger (struct) not log.Logger (interface)
+	logosLogger := logos.NewLogger(logos.LevelInfo, formatter, os.Stdout)
+	log.SetDefault(log.LogosAdapter(logosLogger))
+
+	// Initialize configuration
+	config.Init(log.Default())
 
 	err := caches.AddCache(caches.DefaultName)
 	if err != nil {
-		logos.WithError(err).Fatal("failed to add default cache")
+		log.WithError(err).Fatal("failed to add default cache")
 	}
 
 	e := echo.New()
@@ -47,9 +62,9 @@ func main() {
 
 	// Start server in a goroutine so we can handle shutdown signals
 	go func() {
-		logos.Infof("starting server on %s", config.WebAddress)
+		log.Infof("starting server on %s", config.WebAddress)
 		if err := e.Start(config.WebAddress); err != nil && err != http.ErrServerClosed {
-			logos.WithError(err).Fatal("failed to start web server")
+			log.WithError(err).Fatal("failed to start web server")
 		}
 	}()
 
@@ -58,15 +73,15 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	logos.Info("shutting down server...")
+	log.Info("shutting down server...")
 
 	// Give the server 10 seconds to finish handling existing requests
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := e.Shutdown(ctx); err != nil {
-		logos.WithError(err).Fatal("server forced to shutdown")
+		log.WithError(err).Fatal("server forced to shutdown")
 	}
 
-	logos.Info("server exited gracefully")
+	log.Info("server exited gracefully")
 }

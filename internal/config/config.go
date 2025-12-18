@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	"github.com/goodblaster/logos"
+	"github.com/goodblaster/map-cache/internal/log"
 )
 
 var (
@@ -11,7 +11,7 @@ var (
 	WebAddress   = ":8080"
 )
 
-func Init() {
+func Init(l log.Logger) {
 	if val := os.Getenv("KEY_DELIMITER"); val != "" {
 		KeyDelimiter = val
 	}
@@ -20,8 +20,8 @@ func Init() {
 		WebAddress = val
 	}
 
-	logos.
+	log.
 		With("KEY_DELIMITER", KeyDelimiter).
 		With("LISTEN_ADDRESS", WebAddress).
-		Debug("Configuration initialized")
+		Info("Configuration initialized")
 }
