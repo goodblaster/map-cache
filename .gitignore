@@ -66,3 +66,31 @@ Temporary Items
 
 # Vendor
 vendor/
+
+# Test coverage files
+*.coverprofile
+coverage.txt
+coverage.html
+
+# Benchmark output
+*.bench
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary and log files
+*.tmp
+*.log
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Additional backup patterns
+*.bak
+*.backup
+
+# IMPORTANT: pkg/ directory contains source code and SHOULD be committed.
+# It is intentionally NOT ignored in this file.
