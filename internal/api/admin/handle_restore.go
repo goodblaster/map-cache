@@ -3,6 +3,8 @@ package admin
 import (
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/goodblaster/errors"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
@@ -18,6 +20,18 @@ type adminRestoreRequest struct {
 func (req adminRestoreRequest) Validate() error {
 	if req.Filename == "" {
 		return errors.New("filename is required")
+	}
+
+	// Security: Prevent path traversal attacks
+	// Only allow simple filenames without directory traversal
+	cleanPath := filepath.Clean(req.Filename)
+	if strings.Contains(cleanPath, "..") {
+		return errors.New("filename cannot contain '..'")
+	}
+
+	// Prevent absolute paths that could read from system directories
+	if filepath.IsAbs(cleanPath) {
+		return errors.New("filename must be a relative path")
 	}
 
 	// Make sure the file exists.

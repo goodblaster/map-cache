@@ -18,7 +18,7 @@ import (
 
 func TestHandleRestore_Success(t *testing.T) {
 	// Setup: Create a backup file
-	tmpfile := "/tmp/test-restore-success.json"
+	tmpfile := "test-restore-success.json"
 	defer os.Remove(tmpfile)
 
 	backup := map[string]any{
@@ -91,7 +91,7 @@ func TestHandleRestore_NonExistentFile(t *testing.T) {
 	e := echo.New()
 
 	// Create request for non-existent file
-	reqBody := `{"cache":"test","filename":"/tmp/nonexistent-file-12345.json"}`
+	reqBody := `{"cache":"test","filename":"nonexistent-file-12345.json"}`
 	req := httptest.NewRequest(http.MethodPost, "/admin/restore", strings.NewReader(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
@@ -106,7 +106,7 @@ func TestHandleRestore_NonExistentFile(t *testing.T) {
 
 func TestHandleRestore_EmptyFile(t *testing.T) {
 	// Setup: Create empty file
-	tmpfile := "/tmp/test-restore-empty.json"
+	tmpfile := "test-restore-empty.json"
 	defer os.Remove(tmpfile)
 
 	err := os.WriteFile(tmpfile, []byte(""), 0644)
@@ -130,7 +130,7 @@ func TestHandleRestore_EmptyFile(t *testing.T) {
 
 func TestHandleRestore_MalformedJSON(t *testing.T) {
 	// Setup: Create file with invalid JSON
-	tmpfile := "/tmp/test-restore-malformed.json"
+	tmpfile := "test-restore-malformed.json"
 	defer os.Remove(tmpfile)
 
 	err := os.WriteFile(tmpfile, []byte("invalid json {"), 0644)
@@ -155,7 +155,7 @@ func TestHandleRestore_MalformedJSON(t *testing.T) {
 // CRITICAL BUG TEST: Test restoring a backup with expired TTL
 func TestHandleRestore_ExpiredTTL_Bug(t *testing.T) {
 	// Setup: Create a backup file with TTL in the past
-	tmpfile := "/tmp/test-restore-expired-ttl.json"
+	tmpfile := "test-restore-expired-ttl.json"
 	defer os.Remove(tmpfile)
 
 	// TTL timestamp is 1 hour in the past
@@ -204,7 +204,7 @@ func TestHandleRestore_ExpiredTTL_Bug(t *testing.T) {
 // CRITICAL BUG TEST: Test restore with multiple key expirations (closure bug)
 func TestHandleRestore_MultipleKeyExpirations_ClosureBug(t *testing.T) {
 	// Setup: Create a backup file with multiple keys with different TTLs
-	tmpfile := "/tmp/test-restore-multiple-ttl.json"
+	tmpfile := "test-restore-multiple-ttl.json"
 	defer os.Remove(tmpfile)
 
 	// TTLs 5 seconds in the future
@@ -274,7 +274,7 @@ func TestHandleRestore_MultipleKeyExpirations_ClosureBug(t *testing.T) {
 
 func TestHandleRestore_WithTriggers(t *testing.T) {
 	// Setup: Create a backup file with triggers
-	tmpfile := "/tmp/test-restore-triggers.json"
+	tmpfile := "test-restore-triggers.json"
 	defer os.Remove(tmpfile)
 
 	backup := map[string]any{
@@ -349,7 +349,7 @@ func TestHandleRestore_InvalidJSON(t *testing.T) {
 
 func TestAdminRestoreRequest_Validate(t *testing.T) {
 	// Create a temp file for testing
-	tmpfile := "/tmp/test-validate.json"
+	tmpfile := "test-validate.json"
 	defer os.Remove(tmpfile)
 	err := os.WriteFile(tmpfile, []byte("data"), 0644)
 	require.NoError(t, err)
@@ -379,7 +379,7 @@ func TestAdminRestoreRequest_Validate(t *testing.T) {
 			name: "non-existent file",
 			req: adminRestoreRequest{
 				CacheName: "test",
-				Filename:  "/tmp/nonexistent-12345.json",
+				Filename:  "nonexistent-12345.json",
 			},
 			expectErr: true,
 		},

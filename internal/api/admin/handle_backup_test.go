@@ -19,7 +19,7 @@ func TestHandleBackup_Success(t *testing.T) {
 	// Setup
 	e := echo.New()
 	cacheName := "test-backup-cache"
-	tmpfile := "/tmp/test-backup.json"
+	tmpfile := "test-backup.json"
 	defer os.Remove(tmpfile)
 
 	// Create cache with data
@@ -62,7 +62,7 @@ func TestHandleBackup_WithTTL(t *testing.T) {
 	// Setup
 	e := echo.New()
 	cacheName := "test-ttl-cache"
-	tmpfile := "/tmp/test-ttl-backup.json"
+	tmpfile := "test-ttl-backup.json"
 	defer os.Remove(tmpfile)
 
 	// Create cache with TTL
@@ -112,7 +112,7 @@ func TestHandleBackup_WithTTL(t *testing.T) {
 func TestHandleBackup_NonExistentCache(t *testing.T) {
 	// Setup
 	e := echo.New()
-	tmpfile := "/tmp/nonexistent-cache.json"
+	tmpfile := "nonexistent-cache.json"
 	defer os.Remove(tmpfile)
 
 	// Create request for non-existent cache
@@ -175,7 +175,7 @@ func TestAdminBackupRequest_Validate(t *testing.T) {
 			name: "valid request",
 			req: adminBackupRequest{
 				CacheName: "test",
-				Filename:  "/tmp/test.json",
+				Filename:  "test.json",
 			},
 			expectErr: false,
 		},

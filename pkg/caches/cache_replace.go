@@ -28,6 +28,11 @@ func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
 
 // ReplaceBatch - Replace multiple, existing values in the cache.
 // Each key in the values map is a path to a value in the cache (/a/b/c).
+//
+// TODO: This function does NOT fire triggers (OnChange) for performance reasons.
+// This creates an inconsistency with Replace() which does fire triggers.
+// Consider: Should batch operations fire triggers? If yes, implement it.
+// If no, document this behavior clearly in API documentation.
 func (cache *Cache) ReplaceBatch(ctx context.Context, values map[string]any) error {
 	// Check all keys first. Error if any do not exist.
 	for key := range values {

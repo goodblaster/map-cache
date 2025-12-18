@@ -2,6 +2,8 @@ package admin
 
 import (
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"github.com/goodblaster/errors"
 	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
@@ -18,6 +20,19 @@ func (req adminBackupRequest) Validate() error {
 	if req.Filename == "" {
 		return errors.New("filename is required")
 	}
+
+	// Security: Prevent path traversal attacks
+	// Only allow simple filenames without directory traversal
+	cleanPath := filepath.Clean(req.Filename)
+	if strings.Contains(cleanPath, "..") {
+		return errors.New("filename cannot contain '..'")
+	}
+
+	// Prevent absolute paths that could write to system directories
+	if filepath.IsAbs(cleanPath) {
+		return errors.New("filename must be a relative path")
+	}
+
 	return nil
 }
 
