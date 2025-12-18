@@ -11,6 +11,11 @@ go build -o map-cache ./cmd/cache/main.go
 # Run the server
 ./map-cache
 
+# Stop the server gracefully (send SIGTERM or SIGINT)
+# The server will wait up to 10 seconds for existing requests to complete
+pkill -TERM map-cache
+# Or press Ctrl+C if running in foreground
+
 # Run all tests
 go test ./...
 

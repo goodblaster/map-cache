@@ -5,6 +5,13 @@
 package main
 
 import (
+	"context"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/goodblaster/logos"
 	"github.com/goodblaster/map-cache/internal/api/admin"
 	v1 "github.com/goodblaster/map-cache/internal/api/v1"
@@ -38,7 +45,28 @@ func main() {
 		})
 	})
 
-	if err := e.Start(config.WebAddress); err != nil {
-		logos.WithError(err).Fatal("failed to start web server")
+	// Start server in a goroutine so we can handle shutdown signals
+	go func() {
+		logos.Infof("starting server on %s", config.WebAddress)
+		if err := e.Start(config.WebAddress); err != nil && err != http.ErrServerClosed {
+			logos.WithError(err).Fatal("failed to start web server")
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	logos.Info("shutting down server...")
+
+	// Give the server 10 seconds to finish handling existing requests
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := e.Shutdown(ctx); err != nil {
+		logos.WithError(err).Fatal("server forced to shutdown")
 	}
+
+	logos.Info("server exited gracefully")
 }
