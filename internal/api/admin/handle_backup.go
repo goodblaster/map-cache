@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/goodblaster/errors"
-	"github.com/goodblaster/map-cache/internal/api/v1/v1errors"
+	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
