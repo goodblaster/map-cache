@@ -162,7 +162,7 @@ func (c *CommandIf) UnmarshalJSON(data []byte) error {
 }
 
 func substituteContextVars(ctx context.Context, expr string) string {
-	val := ctx.Value("vars")
+	val := ctx.Value(triggerVarsContextKey)
 	vars, ok := val.([]string)
 	if !ok {
 		return expr

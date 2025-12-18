@@ -14,10 +14,18 @@ const (
 	MaxTriggerDepth = 10
 )
 
-// Context key type for trigger depth tracking
+// Context key types for type-safe context value access
 type triggerDepthKey struct{}
+type triggerVarsKey struct{}
+type triggerOldValueKey struct{}
+type triggerNewValueKey struct{}
 
-var triggerDepthContextKey = triggerDepthKey{}
+var (
+	triggerDepthContextKey    = triggerDepthKey{}
+	triggerVarsContextKey     = triggerVarsKey{}
+	triggerOldValueContextKey = triggerOldValueKey{}
+	triggerNewValueContextKey = triggerNewValueKey{}
+)
 
 // Trigger - A trigger is a command that is executed when a specified key is modified.
 // For now, this command is only called on-change. Future versions may support
@@ -55,9 +63,9 @@ func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newV
 			}
 
 			for _, trigger := range triggers {
-				cmdCtx := context.WithValue(ctx, "vars", vars)
-				cmdCtx = context.WithValue(cmdCtx, "oldValue", oldValue)
-				cmdCtx = context.WithValue(cmdCtx, "newValue", newValue)
+				cmdCtx := context.WithValue(ctx, triggerVarsContextKey, vars)
+				cmdCtx = context.WithValue(cmdCtx, triggerOldValueContextKey, oldValue)
+				cmdCtx = context.WithValue(cmdCtx, triggerNewValueContextKey, newValue)
 				if res := trigger.Command.Do(cmdCtx, cache); res.Error != nil {
 					return errors.Wrap(res.Error, "trigger failed")
 				}
