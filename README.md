@@ -767,6 +767,100 @@ curl -X POST http://localhost:8080/api/v1/commands/execute \
 
 ---
 
+## 🎓 Real-World Use Case Scenarios
+
+The `pkg/caches/scenarios_test.go` file contains comprehensive, production-ready examples demonstrating what map-cache excels at. These scenarios serve as both documentation and executable tests.
+
+### View the Scenarios
+
+```bash
+# Run all scenario tests
+go test -v -run TestScenario ./pkg/caches
+
+# Run a specific scenario
+go test -v -run TestScenario_SessionManagement ./pkg/caches
+```
+
+### Featured Scenarios
+
+#### 1. **Session Management** (`TestScenario_SessionManagement`)
+- Store user sessions with nested data (user info, permissions, timestamps)
+- Automatic session cleanup with TTL-based expiration
+- Perfect for web applications requiring session storage
+
+#### 2. **Feature Flags** (`TestScenario_FeatureFlags`)
+- Centralized feature flag management across multiple services
+- Bulk enable/disable features using wildcard patterns
+- Check feature availability with `any()` and `all()` functions
+- Ideal for gradual feature rollouts and A/B testing
+
+#### 3. **Rate Limiting** (`TestScenario_RateLimiting`)
+- Per-user API rate limiting with automatic window resets
+- Track request counts and enforce limits
+- Auto-reset counters using TTL expiration
+- Production-ready for API throttling
+
+#### 4. **Shopping Cart** (`TestScenario_ShoppingCart`)
+- Product catalog integration with ArrayAppend for adding items
+- Triggers auto-increment cart total when products are marked as added
+- Demonstrates product lookup and trigger-based price aggregation
+- Shows pattern for maintaining cart state with product references
+
+#### 5. **Leaderboards** (`TestScenario_Leaderboard`)
+- Real-time gaming leaderboards with score tracking
+- Trigger-based automatic "elite" status when players cross 1500 points
+- Demonstrates conditional logic with triggers
+- Shows how triggers can update related fields when scores change
+
+#### 6. **User Presence Tracking** (`TestScenario_PresenceTracking`)
+- Track online/offline user status
+- Auto-remove inactive users with TTL
+- Heartbeat-based activity updates
+- Great for chat applications and collaborative tools
+
+#### 7. **Configuration Management** (`TestScenario_ConfigurationManagement`)
+- Environment-specific configuration with fallbacks
+- Bulk configuration updates across environments
+- Hierarchical config with default values
+- Enterprise configuration management
+
+#### 8. **Workflow State Machine** (`TestScenario_WorkflowStateMachine`)
+- Order processing workflows with state transitions
+- Trigger-based automation for state changes
+- Automatic timestamp tracking
+- Business process automation
+
+#### 9. **Metrics Aggregation** (`TestScenario_MetricsAggregation`)
+- Real-time metrics collection across services
+- Counter increments for requests, errors, jobs
+- Threshold-based alerting with conditional logic
+- Observability and monitoring
+
+#### 10. **Distributed Locking** (`TestScenario_DistributedLock`)
+- Distributed lock implementation with TTL
+- Automatic lock release on expiration
+- Process coordination across instances
+- Prevent race conditions in distributed systems
+
+#### 11. **Parallel Batch Processing** (`TestScenario_ParallelBatchProcessing`)
+- Distributed batch job processing with cascading triggers
+- Multiple tasks with countdown-based completion tracking
+- Two-level trigger cascade: task completion → batch completion
+- Perfect for ETL pipelines, MapReduce, parallel test execution, or render farms
+- Demonstrates `all()` aggregation function for conditional logic
+
+### Why These Scenarios Matter
+
+Each scenario demonstrates:
+- **Real production patterns** - Not toy examples, but actual use cases
+- **Best practices** - Proper error handling, TTL usage, and atomic operations
+- **Feature showcase** - Highlights specific map-cache capabilities
+- **Copy-paste ready** - Use as templates for your own implementation
+
+These tests run in CI/CD, ensuring the examples stay accurate and functional as the project evolves.
+
+---
+
 ## 🛠️ Admin Endpoints
 
 ### Backup Cache
