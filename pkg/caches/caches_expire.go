@@ -24,6 +24,7 @@ func SetCacheTTL(name string, milliseconds int64) error {
 	cache.exp = FutureFunc(milliseconds, func() {
 		caches.Delete(name)
 	})
+	cache.expMillis = &milliseconds
 
 	return nil
 }
@@ -42,6 +43,7 @@ func CancelCacheExpiration(name string) error {
 	if cache.exp != nil {
 		cache.exp.Stop()
 		cache.exp = nil
+		cache.expMillis = nil
 	}
 
 	return nil

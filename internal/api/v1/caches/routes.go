@@ -8,6 +8,9 @@ func SetupRoutes(group *echo.Group) {
 	// Get cache name list
 	gCaches.GET("", handleGetCacheList())
 
+	// Get cache statistics
+	gCaches.GET("/stats", handleGetStats())
+
 	// Create a cache
 	gCaches.POST("", handleCreateCache())
 

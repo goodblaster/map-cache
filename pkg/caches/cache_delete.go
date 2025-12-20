@@ -9,6 +9,8 @@ import (
 )
 
 func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
+	cache.recordActivity()
+
 	for _, key := range keys {
 		path := SplitKey(key)
 

@@ -8,6 +8,7 @@ import (
 
 // Replace - Replace single value in the cache.
 func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
+	cache.recordActivity()
 	key = substituteContextVars(ctx, key)
 
 	// Check key first. Error if does not exist.
@@ -38,6 +39,8 @@ func (cache *Cache) Replace(ctx context.Context, key string, value any) error {
 // Consider: Should batch operations fire triggers? If yes, implement it.
 // If no, document this behavior clearly in API documentation.
 func (cache *Cache) ReplaceBatch(ctx context.Context, values map[string]any) error {
+	cache.recordActivity()
+
 	// Check all keys first. Error if any do not exist.
 	for key := range values {
 		if !cache.cmap.Exists(ctx, SplitKey(key)...) {
