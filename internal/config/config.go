@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/goodblaster/map-cache/internal/log"
 )
@@ -15,6 +16,10 @@ var (
 	TelemetryExporter = "none"
 	OTLPEndpoint      = "localhost:4317"
 	ServiceName       = "map-cache"
+
+	// Command execution configuration
+	CommandLongThresholdMs = int64(500)   // 0.5 seconds default
+	CommandTimeoutMs       = int64(10000) // 10 seconds default
 )
 
 func Init(l log.Logger) {
@@ -43,10 +48,25 @@ func Init(l log.Logger) {
 		ServiceName = val
 	}
 
+	// Command execution configuration
+	if val := os.Getenv("COMMAND_LONG_THRESHOLD_MS"); val != "" {
+		if parsed, err := strconv.ParseInt(val, 10, 64); err == nil {
+			CommandLongThresholdMs = parsed
+		}
+	}
+
+	if val := os.Getenv("COMMAND_TIMEOUT_MS"); val != "" {
+		if parsed, err := strconv.ParseInt(val, 10, 64); err == nil {
+			CommandTimeoutMs = parsed
+		}
+	}
+
 	log.
 		With("KEY_DELIMITER", KeyDelimiter).
 		With("LISTEN_ADDRESS", WebAddress).
 		With("TELEMETRY_ENABLED", TelemetryEnabled).
 		With("TELEMETRY_EXPORTER", TelemetryExporter).
+		With("COMMAND_LONG_THRESHOLD_MS", CommandLongThresholdMs).
+		With("COMMAND_TIMEOUT_MS", CommandTimeoutMs).
 		Info("Configuration initialized")
 }

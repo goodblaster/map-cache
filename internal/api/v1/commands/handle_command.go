@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/goodblaster/errors"
+	"github.com/goodblaster/map-cache/internal/config"
 	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
@@ -36,8 +39,17 @@ func handleCommand() echo.HandlerFunc {
 			cmds = append(cmds, rawCommand.Command)
 		}
 
+		// Create context with timeout
+		ctx, cancel := context.WithTimeout(c.Request().Context(), time.Duration(config.CommandTimeoutMs)*time.Millisecond)
+		defer cancel()
+
 		cache := Cache(c)
-		result := cache.Execute(c.Request().Context(), cmds...)
+		result := cache.Execute(ctx, cmds...)
+
+		// Check if execution timed out
+		if ctx.Err() == context.DeadlineExceeded {
+			return v1errors.ApiError(c, http.StatusRequestTimeout, "command execution timed out")
+		}
 
 		if result.Error != nil {
 			return v1errors.ApiError(c, http.StatusInternalServerError, result.Error)

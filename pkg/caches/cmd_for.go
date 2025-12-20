@@ -48,6 +48,11 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 	var allResults []CmdResult
 
 	for _, key := range keys {
+		// Check for context cancellation
+		if err := ctx.Err(); err != nil {
+			return CmdResult{Error: err}
+		}
+
 		submatches := keyRegex.FindStringSubmatch(key)
 		if len(submatches) != starCount+1 {
 			// No match or incorrect group count
@@ -55,6 +60,11 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 		}
 
 		for _, cmd := range f.Commands {
+			// Check for context cancellation
+			if err := ctx.Err(); err != nil {
+				return CmdResult{Error: err}
+			}
+
 			// Replace ${{1}}, ${{2}}, ... with the captured fragments
 			transformed := transformCommand(cmd, submatches[1:])
 

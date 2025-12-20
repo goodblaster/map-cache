@@ -20,6 +20,7 @@ type Cache struct {
 	triggers      map[string][]Trigger // key-based triggers
 	lastAccessed  *time.Time           // last access timestamp
 	activityCount atomic.Int64         // count of operations (thread-safe)
+	opStats       *OperationStats      // long-running operation tracking
 }
 
 func New() *Cache {
@@ -28,6 +29,7 @@ func New() *Cache {
 		mutex:    &sync.Mutex{},
 		keyExps:  map[string]*Timer{},
 		triggers: map[string][]Trigger{},
+		opStats:  NewOperationStats(100), // Keep last 100 long operations
 	}
 }
 
@@ -96,4 +98,16 @@ func (cache *Cache) Triggers() map[string][]Trigger {
 // This method is NOT thread-safe - caller must acquire the cache lock first.
 func (cache *Cache) Expiration() *Timer {
 	return cache.exp
+}
+
+// RecordLongOperation records a long-running operation.
+// This method IS thread-safe (delegates to OperationStats which handles locking).
+func (cache *Cache) RecordLongOperation(duration time.Duration, operation string, success bool, timedOut bool) {
+	cache.opStats.RecordLongOperation(duration, operation, success, timedOut)
+}
+
+// OperationStatsSnapshot returns the operation statistics for this cache.
+// This method IS thread-safe (OperationStats uses internal locking).
+func (cache *Cache) OperationStatsSnapshot() OperationStatsSnapshot {
+	return cache.opStats.GetStats()
 }

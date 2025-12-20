@@ -14,6 +14,9 @@ func SetupRoutes(e *echo.Echo) {
 	e.Pre(middleware.RemoveTrailingSlash())
 	v1 := e.Group("/api/v1")
 
+	// Apply timing middleware to all v1 API operations
+	v1.Use(TimingMiddleware)
+
 	docs.SetupRoutes(v1)
 	keys.SetupRoutes(v1)
 	caches.SetupRoutes(v1)
