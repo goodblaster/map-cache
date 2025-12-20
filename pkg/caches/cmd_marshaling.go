@@ -2,7 +2,6 @@ package caches
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 type CommandEnvelope struct {
@@ -53,7 +52,7 @@ func (r *RawCommand) UnmarshalJSON(data []byte) error {
 	case CommandTypeDelete:
 		cmd = &CommandDelete{}
 	default:
-		return fmt.Errorf("unknown command type: %s", base.Type)
+		return ErrUnknownCommandType.Format(base.Type)
 	}
 
 	if err := json.Unmarshal(data, cmd); err != nil {

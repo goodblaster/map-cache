@@ -2,8 +2,6 @@ package caches
 
 import (
 	"context"
-
-	"github.com/goodblaster/errors"
 )
 
 // Increment - Increment single value in the cache.
@@ -17,12 +15,12 @@ func (cache *Cache) Increment(ctx context.Context, key string, value any) (float
 
 	f64, ok := ToFloat64(oldValue)
 	if !ok {
-		return 0, errors.New("not a number")
+		return 0, ErrNotANumber
 	}
 
 	inc, ok := ToFloat64(value)
 	if !ok {
-		return 0, errors.New("increment value must be a number")
+		return 0, ErrIncrementValueNotNumber
 	}
 
 	f64 += inc

@@ -27,12 +27,12 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
 	match := re.FindStringSubmatch(f.LoopExpr)
 	if len(match) < 2 {
-		return CmdResult{Error: fmt.Errorf("invalid FOR expression: %s", f.LoopExpr)}
+		return CmdResult{Error: ErrInvalidForExpression.Format(f.LoopExpr)}
 	}
 
 	keyPattern := strings.TrimSpace(match[1])
 	if !strings.Contains(keyPattern, "*") {
-		return CmdResult{Error: fmt.Errorf("FOR expression must include a wildcard: %s", keyPattern)}
+		return CmdResult{Error: ErrForExpressionNeedsWildcard.Format(keyPattern)}
 	}
 
 	// Build a regex from the wildcard pattern

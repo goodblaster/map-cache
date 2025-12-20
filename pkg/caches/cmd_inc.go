@@ -4,8 +4,6 @@ import (
 	"context"
 	"math"
 	"reflect"
-
-	"github.com/goodblaster/errors"
 )
 
 type CommandInc struct {
@@ -29,7 +27,7 @@ func (p CommandInc) Do(ctx context.Context, cache *Cache) CmdResult {
 
 	f64, ok := ToFloat64(v)
 	if !ok {
-		return CmdResult{Error: errors.New("not a number")}
+		return CmdResult{Error: ErrNotANumber}
 	}
 
 	f64 += p.Value

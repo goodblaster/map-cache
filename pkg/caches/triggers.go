@@ -47,7 +47,7 @@ func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newV
 	// Check current trigger depth
 	depth := getTriggerDepth(ctx)
 	if depth > MaxTriggerDepth {
-		return errors.Newf("trigger recursion depth limit exceeded (max: %d) - possible infinite loop detected", MaxTriggerDepth)
+		return ErrTriggerRecursionLimit.Format(MaxTriggerDepth)
 	}
 
 	// Increment depth for nested trigger executions
@@ -105,18 +105,18 @@ func ExtractWildcardMatches(key, triggerKey string) ([]string, error) {
 	triggerParts := strings.Split(triggerKey, "/")
 
 	if len(keyParts) != len(triggerParts) {
-		return nil, errors.Newf("mismatched path lengths: %v vs %v", keyParts, triggerParts)
+		return nil, ErrMismatchedPathLengths.Format(keyParts, triggerParts)
 	}
 
 	var matches []string
 	for i := range keyParts {
 		if triggerParts[i] == "*" {
 			if keyParts[i] == "" {
-				return nil, errors.Newf("wildcard at index %d matched empty segment", i)
+				return nil, ErrWildcardEmptySegment.Format(i)
 			}
 			matches = append(matches, keyParts[i])
 		} else if triggerParts[i] != keyParts[i] {
-			return nil, errors.Newf("segment mismatch at index %d: %s != %s", i, triggerParts[i], keyParts[i])
+			return nil, ErrSegmentMismatch.Format(i, triggerParts[i], keyParts[i])
 		}
 	}
 	return matches, nil

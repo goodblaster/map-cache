@@ -69,19 +69,19 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 		var err error
 		expr, err = govaluate.NewEvaluableExpression(conditionExpr)
 		if err != nil {
-			return CmdResult{Error: fmt.Errorf("invalid expression: %w", err)}
+			return CmdResult{Error: ErrInvalidExpression.Format(err)}
 		}
 		exprCache.Store(conditionExpr, expr)
 	}
 
 	result, err := expr.Evaluate(parameters)
 	if err != nil {
-		return CmdResult{Error: fmt.Errorf("evaluation error: %w", err)}
+		return CmdResult{Error: ErrEvaluationError.Format(err)}
 	}
 
 	isTrue, ok := result.(bool)
 	if !ok {
-		return CmdResult{Error: fmt.Errorf("expression did not return a boolean")}
+		return CmdResult{Error: ErrExpressionNotBoolean}
 	}
 
 	if isTrue {

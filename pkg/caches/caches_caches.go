@@ -3,7 +3,6 @@ package caches
 import (
 	"sync"
 
-	"github.com/goodblaster/errors"
 	"github.com/goodblaster/map-cache/pkg/containers"
 )
 
@@ -23,7 +22,7 @@ func List() []string {
 func AddCache(name string) error {
 	_, exists := caches.Load(name)
 	if exists {
-		return errors.New("cache already exists")
+		return ErrCacheAlreadyExists
 	}
 
 	cache := New()
@@ -35,7 +34,7 @@ func AddCache(name string) error {
 func FetchCache(name string) (*Cache, error) {
 	val, exists := caches.Load(name)
 	if !exists {
-		return nil, errors.New("cache not found")
+		return nil, ErrCacheNotFound
 	}
 
 	cache := val.(*Cache)

@@ -58,7 +58,7 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 			for _, k := range keys {
 				val, err := cache.Get(ctx, k)
 				if err != nil {
-					return nil, fmt.Errorf("wildcard interpolation error for key %q: %w", k, err)
+					return nil, ErrWildcardInterpolation.Format(k, err)
 				}
 				results = append(results, val)
 			}
@@ -68,7 +68,7 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 		// Non-wildcard direct fetch
 		val, err := cache.Get(ctx, keyExpr)
 		if err != nil {
-			return nil, fmt.Errorf("interpolation error for key %q: %w", keyExpr, err)
+			return nil, ErrInterpolation.Format(keyExpr, err)
 		}
 		return val, nil
 	}
@@ -83,7 +83,7 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 		keyExpr := strings.TrimSpace(s[keyStart:keyEnd])
 
 		if strings.Contains(keyExpr, "*") {
-			return nil, fmt.Errorf("wildcards not allowed in templated string: %q", keyExpr)
+			return nil, ErrWildcardInTemplate.Format(keyExpr)
 		}
 
 		// Append literal before interpolation
@@ -100,7 +100,7 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 		}
 
 		if err != nil {
-			return nil, fmt.Errorf("interpolation error for key %q: %w", keyExpr, err)
+			return nil, ErrInterpolation.Format(keyExpr, err)
 		}
 
 		// Optimize: avoid fmt.Sprintf if value is already a string
@@ -126,7 +126,7 @@ func evaluateWithFallback(ctx context.Context, cache *Cache, expr string) (any, 
 
 	// Must have exactly 2 parts: key || default
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("fallback expression must have exactly 2 parts (key || default), got %d parts in: %q", len(parts), expr)
+		return nil, ErrInvalidFallbackExpression.Format(len(parts), expr)
 	}
 
 	keyPart := strings.TrimSpace(parts[0])
@@ -134,7 +134,7 @@ func evaluateWithFallback(ctx context.Context, cache *Cache, expr string) (any, 
 
 	// Disallow wildcards with fallback
 	if strings.Contains(keyPart, "*") {
-		return nil, fmt.Errorf("wildcards not allowed with fallback operator: %q", keyPart)
+		return nil, ErrWildcardWithFallback.Format(keyPart)
 	}
 
 	// Try to get the key from cache
