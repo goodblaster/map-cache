@@ -98,52 +98,44 @@ func TestRETURN_FallbackToLiteral(t *testing.T) {
 	assert.Equal(t, "quoted string", res.Value)
 }
 
-func TestRETURN_FallbackToExistingKey(t *testing.T) {
+func TestRETURN_FallbackWithExistingKey(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
 
-	data := `{"primary": "value1", "secondary": "value2"}`
+	data := `{"username": "Alice", "age": 25}`
 	m := map[string]any{}
 	err := json.Unmarshal([]byte(data), &m)
 	assert.NoError(t, err)
 	err = cache.Create(ctx, m)
 	assert.NoError(t, err)
 
-	// Primary key exists - use it
-	cmd := RETURN("${{primary || secondary}}")
+	// Key exists - use it (ignore default)
+	cmd := RETURN("${{username || Guest}}")
 	res := cmd.Do(ctx, cache)
 	assert.NoError(t, res.Error)
-	assert.Equal(t, "value1", res.Value)
+	assert.Equal(t, "Alice", res.Value)
 
-	// Primary missing - fall back to secondary
-	cmd = RETURN("${{missing || secondary}}")
+	// Key missing - use default literal
+	cmd = RETURN("${{status || active}}")
 	res = cmd.Do(ctx, cache)
 	assert.NoError(t, res.Error)
-	assert.Equal(t, "value2", res.Value)
+	assert.Equal(t, "active", res.Value)
 }
 
-func TestRETURN_FallbackChain(t *testing.T) {
+func TestRETURN_FallbackOnlyTwoParts(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
 
-	data := `{"tertiary": "value3"}`
-	m := map[string]any{}
-	err := json.Unmarshal([]byte(data), &m)
-	assert.NoError(t, err)
-	err = cache.Create(ctx, m)
-	assert.NoError(t, err)
-
-	// Try primary, then secondary, then tertiary
+	// More than 2 parts should error
 	cmd := RETURN("${{primary || secondary || tertiary}}")
 	res := cmd.Do(ctx, cache)
-	assert.NoError(t, res.Error)
-	assert.Equal(t, "value3", res.Value)
+	assert.Error(t, res.Error)
+	assert.Contains(t, res.Error.Error(), "must have exactly 2 parts")
 
-	// All keys missing - use literal default
-	cmd = RETURN("${{primary || secondary || fallback_value}}")
+	// Single part (no fallback) is valid but will error if key missing
+	cmd = RETURN("${{nonexistent}}")
 	res = cmd.Do(ctx, cache)
-	assert.NoError(t, res.Error)
-	assert.Equal(t, "fallback_value", res.Value)
+	assert.Error(t, res.Error)
 }
 
 func TestRETURN_FallbackInTemplate(t *testing.T) {

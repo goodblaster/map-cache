@@ -315,7 +315,7 @@
 			"description": "Examples of recently added features",
 			"item": [
 				{
-					"name": "Optional Values - Fallback Chain",
+					"name": "Optional Values - Setup Examples",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -324,7 +324,30 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{user/premium || user/trial || false}}\"\n    }\n  ]\n}"
+							"raw": "{\n  \"entries\": {\n    \"user\": {\n      \"id\": 123,\n      \"tier\": \"free\"\n    },\n    \"defaults\": {\n      \"theme\": \"light\",\n      \"quota\": 100,\n      \"features\": {\"api\": false, \"export\": false}\n    },\n    \"premium_defaults\": {\n      \"theme\": \"dark\",\n      \"quota\": 10000,\n      \"features\": {\"api\": true, \"export\": true}\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup: Create data for optional values examples"
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - Boolean Default",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{user/premium || false}}\"\n    }\n  ]\n}"
 						},
 						"url": {
 							"raw": "http://localhost:8080/api/v1/commands/execute",
@@ -333,7 +356,99 @@
 							"port": "8080",
 							"path": ["api", "v1", "commands", "execute"]
 						},
-						"description": "Use fallback values when keys don't exist. Tries each key in order, returns literal value if all fail"
+						"description": "Returns false because user/premium doesn't exist. Syntax: key || literal_value. Run 'Optional Values - Setup Examples' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - String Default (Quoted)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{user/name || \\\"Guest\\\"}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Returns \\\"Guest\\\" (with quotes in JSON, they're stripped). For string literals, use quotes. Run 'Optional Values - Setup Examples' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - String Default (Unquoted)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{defaults/theme || light}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Returns \\\"light\\\" from defaults/theme. Unquoted strings work too. Run 'Optional Values - Setup Examples' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - Number Default",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{user/quota || 100}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Returns 100 because user/quota doesn't exist. Numbers, floats, booleans work as defaults. Run 'Optional Values - Setup Examples' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - Key Exists",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{user/id || 0}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Returns 123 from user/id (ignores default 0). When key exists, its value is returned. Run 'Optional Values - Setup Examples' first."
 					},
 					"response": []
 				},

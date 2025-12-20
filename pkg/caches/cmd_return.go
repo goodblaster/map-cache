@@ -119,39 +119,32 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 	return builder.String(), nil
 }
 
-// evaluateWithFallback handles "key1 || key2 || default" syntax
+// evaluateWithFallback handles "key || default" syntax
+// The key is tried first, if it doesn't exist, the default literal value is returned
 func evaluateWithFallback(ctx context.Context, cache *Cache, expr string) (any, error) {
 	parts := strings.Split(expr, "||")
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("invalid fallback expression: %q", expr)
+
+	// Must have exactly 2 parts: key || default
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("fallback expression must have exactly 2 parts (key || default), got %d parts in: %q", len(parts), expr)
 	}
+
+	keyPart := strings.TrimSpace(parts[0])
+	defaultPart := strings.TrimSpace(parts[1])
 
 	// Disallow wildcards with fallback
-	if strings.Contains(expr, "*") {
-		return nil, fmt.Errorf("wildcards not allowed with fallback operator: %q", expr)
+	if strings.Contains(keyPart, "*") {
+		return nil, fmt.Errorf("wildcards not allowed with fallback operator: %q", keyPart)
 	}
 
-	// Try each part in order
-	for i, part := range parts {
-		part = strings.TrimSpace(part)
-		isLast := i == len(parts)-1
-
-		// Try as cache key lookup
-		val, err := cache.Get(ctx, part)
-		if err == nil {
-			return val, nil
-		}
-
-		// If not last, continue to next fallback
-		if !isLast {
-			continue
-		}
-
-		// Last part is the default value - parse as literal
-		return parseLiteral(part), nil
+	// Try to get the key from cache
+	val, err := cache.Get(ctx, keyPart)
+	if err == nil {
+		return val, nil
 	}
 
-	return nil, fmt.Errorf("all fallbacks failed for: %q", expr)
+	// Key doesn't exist, return the default literal value
+	return parseLiteral(defaultPart), nil
 }
 
 // parseLiteral converts a string to its appropriate type
