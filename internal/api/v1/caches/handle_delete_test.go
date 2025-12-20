@@ -1,0 +1,75 @@
+package caches
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/goodblaster/map-cache/pkg/caches"
+	"github.com/labstack/echo/v4"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestHandleDeleteCache_Success(t *testing.T) {
+	// Setup
+	e := echo.New()
+
+	// Create a test cache
+	err := caches.AddCache("test-delete-cache")
+	assert.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/caches/test-delete-cache", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("name")
+	c.SetParamValues("test-delete-cache")
+
+	// Execute
+	handler := handleDeleteCache()
+	err = handler(c)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	// Verify cache was actually deleted
+	_, err = caches.FetchCache("test-delete-cache")
+	assert.Error(t, err) // Should error because cache doesn't exist
+}
+
+func TestHandleDeleteCache_NotFound(t *testing.T) {
+	// Setup
+	e := echo.New()
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/caches/nonexistent", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	c.SetParamNames("name")
+	c.SetParamValues("nonexistent")
+
+	// Execute
+	handler := handleDeleteCache()
+	err := handler(c)
+
+	// Assert - ApiError returns nil but sets HTTP status in response
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNotFound, rec.Code)
+}
+
+func TestHandleDeleteCache_MissingName(t *testing.T) {
+	// Setup
+	e := echo.New()
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/v1/caches/", nil)
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	// Don't set param - simulating missing name
+
+	// Execute
+	handler := handleDeleteCache()
+	err := handler(c)
+
+	// Assert - should return bad request
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+}

@@ -81,6 +81,22 @@ func TestHandlePut(t *testing.T) {
 			assert.Equal(t, http.StatusOK, rec.Code)
 		}
 	})
+
+	t.Run("invalid JSON", func(t *testing.T) {
+		cache := caches.New()
+		req := httptest.NewRequest(http.MethodPut, "/keys/key1", bytes.NewReader([]byte("{invalid}")))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetParamNames("key")
+		c.SetParamValues("key1")
+		c.Set("cache", cache)
+
+		h := handlePut()
+		if assert.NoError(t, h(c)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+		}
+	})
 }
 
 func TestHandleReplaceBatch(t *testing.T) {
@@ -144,6 +160,91 @@ func TestHandleReplaceBatch(t *testing.T) {
 		h := handleReplaceBatch()
 		if assert.NoError(t, h(c)) {
 			assert.Equal(t, http.StatusBadRequest, rec.Code)
+		}
+	})
+
+	t.Run("invalid JSON", func(t *testing.T) {
+		cache := caches.New()
+		req := httptest.NewRequest(http.MethodPut, "/keys", bytes.NewReader([]byte("{invalid}")))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.Set("cache", cache)
+
+		h := handleReplaceBatch()
+		if assert.NoError(t, h(c)) {
+			assert.Equal(t, http.StatusBadRequest, rec.Code)
+		}
+	})
+
+	t.Run("with TTL", func(t *testing.T) {
+		cache := caches.New()
+		ctx := context.Background()
+
+		// Create initial keys
+		cache.Acquire("test")
+		err := cache.Create(ctx, map[string]any{
+			"key1": "value1",
+			"key2": "value2",
+		})
+		cache.Release("test")
+		require.NoError(t, err)
+
+		// Replace with TTL
+		ttl1 := int64(5000)
+		reqBody := map[string]any{
+			"entries": map[string]any{
+				"key1": "new1",
+				"key2": "new2",
+			},
+			"ttl": map[string]*int64{
+				"key1": &ttl1,
+			},
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest(http.MethodPut, "/keys", bytes.NewReader(body))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.Set("cache", cache)
+
+		h := handleReplaceBatch()
+		if assert.NoError(t, h(c)) {
+			assert.Equal(t, http.StatusOK, rec.Code)
+		}
+	})
+
+	t.Run("cancel TTL with null", func(t *testing.T) {
+		cache := caches.New()
+		ctx := context.Background()
+
+		// Create initial key with TTL
+		cache.Acquire("test")
+		err := cache.Create(ctx, map[string]any{"key1": "value1"})
+		require.NoError(t, err)
+		err = cache.SetKeyTTL(ctx, "key1", 5000)
+		cache.Release("test")
+		require.NoError(t, err)
+
+		// Replace and cancel TTL
+		reqBody := map[string]any{
+			"entries": map[string]any{
+				"key1": "new1",
+			},
+			"ttl": map[string]*int64{
+				"key1": nil,
+			},
+		}
+		body, _ := json.Marshal(reqBody)
+		req := httptest.NewRequest(http.MethodPut, "/keys", bytes.NewReader(body))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.Set("cache", cache)
+
+		h := handleReplaceBatch()
+		if assert.NoError(t, h(c)) {
+			assert.Equal(t, http.StatusOK, rec.Code)
 		}
 	})
 }
