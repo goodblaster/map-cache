@@ -50,6 +50,8 @@ func (r *RawCommand) UnmarshalJSON(data []byte) error {
 		cmd = &CommandNoop{}
 	case CommandTypeGroup:
 		cmd = &CommandGroup{}
+	case CommandTypeDelete:
+		cmd = &CommandDelete{}
 	default:
 		return fmt.Errorf("unknown command type: %s", base.Type)
 	}
@@ -158,6 +160,17 @@ func (c CommandNoop) MarshalJSON() ([]byte, error) {
 
 func (c CommandGroup) MarshalJSON() ([]byte, error) {
 	type Alias CommandGroup
+	return json.Marshal(struct {
+		Type CommandType `json:"type"`
+		*Alias
+	}{
+		Type:  c.Type(),
+		Alias: (*Alias)(&c),
+	})
+}
+
+func (c CommandDelete) MarshalJSON() ([]byte, error) {
+	type Alias CommandDelete
 	return json.Marshal(struct {
 		Type CommandType `json:"type"`
 		*Alias

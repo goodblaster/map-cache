@@ -6,12 +6,16 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/Knetic/govaluate"
 )
 
 // keyIdentifierReplacer is reused for converting keys to identifiers
 var keyIdentifierReplacer = strings.NewReplacer(".", "_", "/", "_", "-", "_")
+
+// exprCache caches compiled expressions to avoid recompiling the same expression
+var exprCache sync.Map // map[string]*govaluate.EvaluableExpression
 
 type CommandIf struct {
 	Condition string  `json:"condition,required"`
@@ -56,9 +60,18 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 		conditionExpr = strings.ReplaceAll(conditionExpr, fullMatch, varName)
 	}
 
-	expr, err := govaluate.NewEvaluableExpression(conditionExpr)
-	if err != nil {
-		return CmdResult{Error: fmt.Errorf("invalid expression: %w", err)}
+	// Check cache first
+	var expr *govaluate.EvaluableExpression
+	if cached, ok := exprCache.Load(conditionExpr); ok {
+		expr = cached.(*govaluate.EvaluableExpression)
+	} else {
+		// Compile and cache
+		var err error
+		expr, err = govaluate.NewEvaluableExpression(conditionExpr)
+		if err != nil {
+			return CmdResult{Error: fmt.Errorf("invalid expression: %w", err)}
+		}
+		exprCache.Store(conditionExpr, expr)
 	}
 
 	result, err := expr.Evaluate(parameters)

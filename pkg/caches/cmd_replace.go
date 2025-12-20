@@ -16,5 +16,8 @@ func REPLACE(key string, value any) Command {
 }
 
 func (p CommandReplace) Do(ctx context.Context, cache *Cache) CmdResult {
-	return CmdResult{Error: cache.Replace(ctx, p.Key, p.Value)}
+	if err := cache.Replace(ctx, p.Key, p.Value); err != nil {
+		return CmdResult{Error: err}
+	}
+	return CmdResult{Value: p.Value}
 }

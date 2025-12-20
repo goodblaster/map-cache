@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -43,10 +44,16 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 
 	if len(matches) == 1 && matches[0][0] == 0 && matches[0][1] == len(s) {
 		// Entire string is a single interpolation
-		key := strings.TrimSpace(s[matches[0][2]:matches[0][3]])
-		if strings.Contains(key, "*") {
+		keyExpr := strings.TrimSpace(s[matches[0][2]:matches[0][3]])
+
+		// Check for fallback syntax: key || default
+		if strings.Contains(keyExpr, "||") {
+			return evaluateWithFallback(ctx, cache, keyExpr)
+		}
+
+		if strings.Contains(keyExpr, "*") {
 			// Wildcard expression
-			keys := cache.cmap.WildKeys(ctx, key)
+			keys := cache.cmap.WildKeys(ctx, keyExpr)
 			var results []any
 			for _, k := range keys {
 				val, err := cache.Get(ctx, k)
@@ -59,9 +66,9 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 		}
 
 		// Non-wildcard direct fetch
-		val, err := cache.Get(ctx, key)
+		val, err := cache.Get(ctx, keyExpr)
 		if err != nil {
-			return nil, fmt.Errorf("interpolation error for key %q: %w", key, err)
+			return nil, fmt.Errorf("interpolation error for key %q: %w", keyExpr, err)
 		}
 		return val, nil
 	}
@@ -73,19 +80,29 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 	for _, match := range matches {
 		start, end := match[0], match[1]
 		keyStart, keyEnd := match[2], match[3]
-		key := strings.TrimSpace(s[keyStart:keyEnd])
+		keyExpr := strings.TrimSpace(s[keyStart:keyEnd])
 
-		if strings.Contains(key, "*") {
-			return nil, fmt.Errorf("wildcards not allowed in templated string: %q", key)
+		if strings.Contains(keyExpr, "*") {
+			return nil, fmt.Errorf("wildcards not allowed in templated string: %q", keyExpr)
 		}
 
 		// Append literal before interpolation
 		builder.WriteString(s[lastIndex:start])
 
-		val, err := cache.Get(ctx, key)
-		if err != nil {
-			return nil, fmt.Errorf("interpolation error for key %q: %w", key, err)
+		var val any
+		var err error
+
+		// Check for fallback syntax in template
+		if strings.Contains(keyExpr, "||") {
+			val, err = evaluateWithFallback(ctx, cache, keyExpr)
+		} else {
+			val, err = cache.Get(ctx, keyExpr)
 		}
+
+		if err != nil {
+			return nil, fmt.Errorf("interpolation error for key %q: %w", keyExpr, err)
+		}
+
 		// Optimize: avoid fmt.Sprintf if value is already a string
 		if str, ok := val.(string); ok {
 			builder.WriteString(str)
@@ -100,4 +117,77 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 	builder.WriteString(s[lastIndex:])
 
 	return builder.String(), nil
+}
+
+// evaluateWithFallback handles "key1 || key2 || default" syntax
+func evaluateWithFallback(ctx context.Context, cache *Cache, expr string) (any, error) {
+	parts := strings.Split(expr, "||")
+	if len(parts) == 0 {
+		return nil, fmt.Errorf("invalid fallback expression: %q", expr)
+	}
+
+	// Disallow wildcards with fallback
+	if strings.Contains(expr, "*") {
+		return nil, fmt.Errorf("wildcards not allowed with fallback operator: %q", expr)
+	}
+
+	// Try each part in order
+	for i, part := range parts {
+		part = strings.TrimSpace(part)
+		isLast := i == len(parts)-1
+
+		// Try as cache key lookup
+		val, err := cache.Get(ctx, part)
+		if err == nil {
+			return val, nil
+		}
+
+		// If not last, continue to next fallback
+		if !isLast {
+			continue
+		}
+
+		// Last part is the default value - parse as literal
+		return parseLiteral(part), nil
+	}
+
+	return nil, fmt.Errorf("all fallbacks failed for: %q", expr)
+}
+
+// parseLiteral converts a string to its appropriate type
+func parseLiteral(s string) any {
+	s = strings.TrimSpace(s)
+
+	// Try boolean
+	if s == "true" {
+		return true
+	}
+	if s == "false" {
+		return false
+	}
+
+	// Try null
+	if s == "null" || s == "nil" {
+		return nil
+	}
+
+	// Try integer
+	if i, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return i
+	}
+
+	// Try float
+	if f, err := strconv.ParseFloat(s, 64); err == nil {
+		return f
+	}
+
+	// Try quoted string (remove quotes)
+	if len(s) >= 2 {
+		if (s[0] == '"' && s[len(s)-1] == '"') || (s[0] == '\'' && s[len(s)-1] == '\'') {
+			return s[1 : len(s)-1]
+		}
+	}
+
+	// Return as-is (unquoted string literal)
+	return s
 }

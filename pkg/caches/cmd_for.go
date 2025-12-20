@@ -92,7 +92,9 @@ func transformCommand(cmd Command, captures []string) Command {
 			IfFalse:   transformCommand(c.IfFalse, captures),
 		}
 	case CommandGet:
-		return &CommandGet{Key: c.Key}
+		return &CommandGet{
+			Key: substituteCaptures(c.Key, captures),
+		}
 	case CommandReplace:
 		return &CommandReplace{
 			Key:   substituteCaptures(c.Key, captures),
@@ -103,6 +105,38 @@ func transformCommand(cmd Command, captures []string) Command {
 			Key:   substituteCaptures(c.Key, captures),
 			Value: c.Value,
 		}
+	case CommandDelete:
+		return &CommandDelete{
+			Key: substituteCaptures(c.Key, captures),
+		}
+	case CommandPrint:
+		transformed := CommandPrint{Messages: make([]string, len(c.Messages))}
+		for i, msg := range c.Messages {
+			transformed.Messages[i] = substituteCaptures(msg, captures)
+		}
+		return &transformed
+	case CommandReturn:
+		if str, ok := c.Key.(string); ok {
+			return &CommandReturn{Key: substituteCaptures(str, captures)}
+		}
+		return &c
+	case CommandFor:
+		transformed := CommandFor{
+			LoopExpr: substituteCaptures(c.LoopExpr, captures),
+			Commands: make([]Command, len(c.Commands)),
+		}
+		for i, cmd := range c.Commands {
+			transformed.Commands[i] = transformCommand(cmd, captures)
+		}
+		return &transformed
+	case CommandGroup:
+		transformed := CommandGroup{actions: make([]Command, len(c.actions))}
+		for i, action := range c.actions {
+			transformed.actions[i] = transformCommand(action, captures)
+		}
+		return &transformed
+	case CommandNoop:
+		return &c
 	default:
 		return cmd
 	}

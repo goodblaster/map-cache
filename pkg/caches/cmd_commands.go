@@ -31,6 +31,7 @@ const (
 	CommandTypeInc     CommandType = "INC"
 	CommandTypeNoop    CommandType = "NOOP"
 	CommandTypeGroup   CommandType = "COMMANDS"
+	CommandTypeDelete  CommandType = "DELETE"
 )
 
 func (CommandGroup) Type() CommandType {
