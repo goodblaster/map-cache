@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -44,12 +43,15 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 		return CmdResult{Error: err}
 	}
 
-	// Now handle remaining simple ${{...}} references
-	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	matches := re.FindAllStringSubmatch(conditionExpr, -1)
+	// Now handle remaining simple ${{...}} references using shared regex
+	matches := InterpolationPattern.FindAllStringSubmatch(conditionExpr, -1)
 	for _, match := range matches {
 		fullMatch := match[0]
-		key := strings.TrimSpace(match[1])
+		key := match[1]
+		// TrimSpace only if needed
+		if len(key) > 0 && (key[0] == ' ' || key[len(key)-1] == ' ' || key[0] == '\t') {
+			key = strings.TrimSpace(key)
+		}
 
 		val, err := cache.Get(ctx, key)
 		if err != nil {
@@ -91,10 +93,9 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 }
 
 func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx context.Context) (string, error) {
-	re := regexp.MustCompile(`\b(any|all)\(\s*\${{\s*([^}]+?)\s*}}\s*([!<>=]=?|==)\s*([^\)]+?)\s*\)`)
-
-	return re.ReplaceAllStringFunc(expr, func(m string) string {
-		matches := re.FindStringSubmatch(m)
+	// Use shared pre-compiled regex for aggregation functions
+	return AggregationPattern.ReplaceAllStringFunc(expr, func(m string) string {
+		matches := AggregationPattern.FindStringSubmatch(m)
 		if len(matches) != 5 {
 			return m
 		}

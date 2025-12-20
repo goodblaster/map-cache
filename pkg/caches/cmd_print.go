@@ -3,7 +3,6 @@ package caches
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/goodblaster/map-cache/internal/log"
 )
@@ -43,13 +42,13 @@ func (p CommandPrint) Do(ctx context.Context, cache *Cache) CmdResult {
 	return res
 }
 
-// ExtractAndReplaceParams - Handle ${{var}}
+// ExtractAndReplaceParams - Handle ${{var}} using shared regex
 func ExtractAndReplaceParams(input string) (string, []string) {
 	var params []string
 
-	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	result := re.ReplaceAllStringFunc(input, func(m string) string {
-		submatch := re.FindStringSubmatch(m)
+	// Use shared pre-compiled regex
+	result := InterpolationPattern.ReplaceAllStringFunc(input, func(m string) string {
+		submatch := InterpolationPattern.FindStringSubmatch(m)
 		if len(submatch) > 1 {
 			params = append(params, submatch[1])
 		}

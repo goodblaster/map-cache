@@ -23,15 +23,27 @@ func FOR(loopExpr string, cmds ...Command) Command {
 }
 
 func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
-	// Extract pattern like ${{job-1234/domains/*/countdown}}
-	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	match := re.FindStringSubmatch(f.LoopExpr)
+	// Extract pattern like ${{job-1234/domains/*/countdown}} using shared regex
+	match := InterpolationPattern.FindStringSubmatch(f.LoopExpr)
 	if len(match) < 2 {
 		return CmdResult{Error: ErrInvalidForExpression.Format(f.LoopExpr)}
 	}
 
-	keyPattern := strings.TrimSpace(match[1])
-	if !strings.Contains(keyPattern, "*") {
+	keyPattern := match[1]
+	// TrimSpace only if needed
+	if len(keyPattern) > 0 && (keyPattern[0] == ' ' || keyPattern[len(keyPattern)-1] == ' ' || keyPattern[0] == '\t') {
+		keyPattern = strings.TrimSpace(keyPattern)
+	}
+
+	// Check for wildcard (avoid strings.Contains)
+	hasWildcard := false
+	for i := 0; i < len(keyPattern); i++ {
+		if keyPattern[i] == '*' {
+			hasWildcard = true
+			break
+		}
+	}
+	if !hasWildcard {
 		return CmdResult{Error: ErrForExpressionNeedsWildcard.Format(keyPattern)}
 	}
 

@@ -3,7 +3,6 @@ package caches
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -34,8 +33,8 @@ func (p CommandReturn) Do(ctx context.Context, cache *Cache) CmdResult {
 }
 
 func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, error) {
-	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	matches := re.FindAllStringSubmatchIndex(s, -1)
+	// Use pre-compiled regex pattern
+	matches := InterpolationPattern.FindAllStringSubmatchIndex(s, -1)
 
 	if len(matches) == 0 {
 		// No interpolations
@@ -43,18 +42,43 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 	}
 
 	if len(matches) == 1 && matches[0][0] == 0 && matches[0][1] == len(s) {
-		// Entire string is a single interpolation
-		keyExpr := strings.TrimSpace(s[matches[0][2]:matches[0][3]])
+		// Entire string is a single interpolation - extract without extra allocation
+		keyExpr := s[matches[0][2]:matches[0][3]]
 
-		// Check for fallback syntax: key || default
-		if strings.Contains(keyExpr, "||") {
+		// TrimSpace only if needed
+		if len(keyExpr) > 0 && (keyExpr[0] == ' ' || keyExpr[len(keyExpr)-1] == ' ' || keyExpr[0] == '\t') {
+			keyExpr = strings.TrimSpace(keyExpr)
+		}
+
+		// Check for special syntax (single pass through string)
+		hasWildcard := false
+		hasFallback := false
+		for i := 0; i < len(keyExpr); i++ {
+			if keyExpr[i] == '*' {
+				hasWildcard = true
+				if hasFallback {
+					break
+				}
+			} else if keyExpr[i] == '|' && i+1 < len(keyExpr) && keyExpr[i+1] == '|' {
+				hasFallback = true
+				if hasWildcard {
+					break
+				}
+			}
+		}
+
+		// Handle fallback syntax: key || default
+		if hasFallback {
 			return evaluateWithFallback(ctx, cache, keyExpr)
 		}
 
-		if strings.Contains(keyExpr, "*") {
+		if hasWildcard {
 			// Wildcard expression
 			keys := cache.cmap.WildKeys(ctx, keyExpr)
-			var results []any
+			if len(keys) == 0 {
+				return []any{}, nil
+			}
+			results := make([]any, 0, len(keys))
 			for _, k := range keys {
 				val, err := cache.Get(ctx, k)
 				if err != nil {
@@ -75,14 +99,32 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 
 	// Partial interpolations (template-style string)
 	var builder strings.Builder
+	builder.Grow(len(s)) // Pre-allocate for typical case
 	lastIndex := 0
 
 	for _, match := range matches {
 		start, end := match[0], match[1]
 		keyStart, keyEnd := match[2], match[3]
-		keyExpr := strings.TrimSpace(s[keyStart:keyEnd])
+		keyExpr := s[keyStart:keyEnd]
 
-		if strings.Contains(keyExpr, "*") {
+		// TrimSpace only if needed
+		if len(keyExpr) > 0 && (keyExpr[0] == ' ' || keyExpr[len(keyExpr)-1] == ' ' || keyExpr[0] == '\t') {
+			keyExpr = strings.TrimSpace(keyExpr)
+		}
+
+		// Check for special syntax (avoid strings.Contains allocations)
+		hasWildcard := false
+		hasFallback := false
+		for i := 0; i < len(keyExpr); i++ {
+			if keyExpr[i] == '*' {
+				hasWildcard = true
+				break
+			} else if keyExpr[i] == '|' && i+1 < len(keyExpr) && keyExpr[i+1] == '|' {
+				hasFallback = true
+			}
+		}
+
+		if hasWildcard {
 			return nil, ErrWildcardInTemplate.Format(keyExpr)
 		}
 
@@ -92,8 +134,8 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 		var val any
 		var err error
 
-		// Check for fallback syntax in template
-		if strings.Contains(keyExpr, "||") {
+		// Handle fallback or direct fetch
+		if hasFallback {
 			val, err = evaluateWithFallback(ctx, cache, keyExpr)
 		} else {
 			val, err = cache.Get(ctx, keyExpr)
