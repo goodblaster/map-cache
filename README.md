@@ -1,18 +1,97 @@
 # map-cache
 
-A powerful, in-memory caching service with an HTTP API built in Go. Designed for scenarios requiring simple map-based storage, atomic operations, conditional logic, and event-driven automation through triggers.
+A powerful, in-memory caching service with an HTTP API and sophisticated query language, built in Go. Think **Redis meets a workflow engine** - combining high-performance caching with reactive programming, conditional logic, and pattern-based automation.
+
+---
+
+## 🎯 Why map-cache?
+
+### The Problem It Solves
+
+Traditional caching solutions like Redis and Memcached excel at simple key-value operations but fall short when you need:
+
+- **Complex conditional logic** on cached data
+- **Reactive workflows** that respond to data changes
+- **Pattern-based batch operations** across multiple keys
+- **Workflow orchestration** without external tools
+- **Type-safe nested structures** with path-based access
+
+map-cache fills this void by combining the speed of in-memory caching with a **declarative query language** that enables sophisticated data transformations, conditional workflows, and event-driven automation - all in a single, dependency-free binary.
+
+### What Makes It Unique
+
+| Feature | Redis | Memcached | map-cache |
+|---------|-------|-----------|-----------|
+| **In-memory performance** | ✅ | ✅ | ✅ |
+| **Nested JSON structures** | ⚠️ Limited | ❌ | ✅ Native |
+| **Conditional logic** | ⚠️ Lua scripts | ❌ | ✅ Built-in |
+| **Pattern matching** | ⚠️ SCAN | ❌ | ✅ Wildcards |
+| **Reactive triggers** | ❌ | ❌ | ✅ Event-driven |
+| **Workflow orchestration** | ❌ | ❌ | ✅ Commands + Triggers |
+| **Type preservation** | ⚠️ Strings only | ⚠️ Strings only | ✅ Full JSON types |
+| **Zero dependencies** | ❌ | ❌ | ✅ Single binary |
+| **RESTful API** | ❌ | ❌ | ✅ OpenAPI/Swagger |
+
+### Real-World Use Cases
+
+map-cache excels at scenarios requiring **stateful coordination** and **reactive behavior**:
+
+1. **Job Orchestration** - Track distributed job progress with automatic completion detection
+2. **Workflow Engines** - State machines with trigger-based transitions
+3. **Real-time Dashboards** - Aggregate metrics with automatic threshold alerts
+4. **Rate Limiting** - Complex rate limiting with conditional logic and automatic resets
+5. **Session Management** - Rich session data with automatic cleanup and activity tracking
+6. **Feature Flags** - Centralized flags with pattern-based bulk updates
+7. **Game State** - Player stats with automatic achievement unlocking via triggers
+8. **Configuration Management** - Hierarchical configs with environment-specific overrides
+9. **Distributed Coordination** - Locking, leader election, task distribution
+10. **Event-Driven Systems** - Triggers enable reactive programming without external message queues
+
+### When to Choose map-cache Over Redis
+
+**Choose map-cache** when you need:
+- Complex conditional workflows on cached data
+- Reactive behavior (triggers fire on changes)
+- Deep nested structures with path-based access
+- Pattern-based bulk operations
+- Embedded workflow logic without external orchestrators
+
+**Choose Redis** when you need:
+- Persistence to disk
+- Pub/sub messaging
+- Distributed deployment (clustering)
+- Mature ecosystem with extensive tooling
+- Battle-tested production reliability at massive scale
+
+### Performance Highlights
+
+Recent optimizations deliver exceptional performance:
+
+- **76% faster** conditional expressions (IF commands) with expression caching
+- **78% less memory** for complex pattern matching operations
+- **Sub-microsecond** simple key lookups (33 ns/op)
+- **Zero allocation** cache fetches from global registry
+- **21% faster** complex workflow scenarios
+- Commands return values with **zero performance cost**
+
+See the [benchmarks](#-testing) section for detailed metrics.
+
+---
 
 ## 🚀 Features
 
 - **Multiple Named Caches**: Create and manage multiple independent cache instances
 - **Nested Key-Value Storage**: Store complex nested data structures with path-based access
-- **Atomic Commands**: Execute batch operations with conditional logic and loops
+- **Atomic Commands**: Execute batch operations with conditional logic, loops, and value interpolation
 - **Event-Driven Triggers**: Automatically react to data changes with pattern-based triggers
 - **Key Expiration (TTL)**: Set time-to-live for individual keys or entire caches
 - **RESTful API**: Full REST API with OpenAPI/Swagger documentation
 - **Wildcard Patterns**: Use wildcards in keys for pattern matching and bulk operations
 - **Value Interpolation**: Reference and compute values dynamically using `${{...}}` syntax
+- **Optional Values**: Graceful fallbacks with `${{key || default}}` syntax
+- **Expression Caching**: Automatic caching of compiled expressions for 76% faster conditionals
 - **Backup & Restore**: Admin endpoints for cache backup and restoration
+- **Zero Dependencies**: Single binary with no external requirements
 
 ---
 
@@ -231,7 +310,7 @@ Response:
 ```
 
 #### Replace Key (PUT)
-Full replacement of a key's value.
+Full replacement of a key's value. **Now returns the new value.**
 
 ```http
 PUT /api/v1/keys/:key
@@ -316,10 +395,15 @@ Content-Type: application/json
 }
 ```
 
+Response (all commands now return values):
+```json
+[5, 5]
+```
+
 ### Command Types
 
 #### INC - Increment/Decrement
-Increment or decrement a numeric value.
+Increment or decrement a numeric value. **Now returns the new value.**
 
 ```json
 {
@@ -329,8 +413,10 @@ Increment or decrement a numeric value.
 }
 ```
 
+**Returns**: The new value after increment (e.g., `4`)
+
 #### REPLACE - Overwrite Value
-Replace a key's value completely.
+Replace a key's value completely. **Now returns the new value.**
 
 ```json
 {
@@ -339,6 +425,44 @@ Replace a key's value completely.
   "value": "complete"
 }
 ```
+
+**Returns**: The new value (e.g., `"complete"`)
+
+#### DELETE - Remove Key 🆕
+Delete a key from the cache. Supports wildcards for bulk deletion. **Returns the deleted value(s).**
+
+```json
+{
+  "type": "DELETE",
+  "key": "users/123/temp"
+}
+```
+
+**Wildcard deletion**:
+```json
+{
+  "type": "DELETE",
+  "key": "sessions/*/expired"
+}
+```
+
+**Returns**:
+- Single key: the deleted value (or `null` if not found)
+- Wildcard: array of deleted values
+
+#### GET - Retrieve Value
+Fetch a value from the cache. Supports wildcards.
+
+```json
+{
+  "type": "GET",
+  "key": "users/*/name"
+}
+```
+
+**Returns**:
+- Single key: the value
+- Wildcard: map of `key → value` pairs
 
 #### RETURN - Return Value
 Return a value or computed expression. This is typically the last command in a sequence.
@@ -349,6 +473,26 @@ Return a value or computed expression. This is typically the last command in a s
   "key": "${{status}}"
 }
 ```
+
+**String interpolation**:
+```json
+{
+  "type": "RETURN",
+  "key": "Status is ${{status}}, count is ${{counter}}"
+}
+```
+
+**Optional values with fallback** 🆕:
+```json
+{
+  "type": "RETURN",
+  "key": "${{user/name || Guest}}"
+}
+```
+
+Syntax: `${{primary || fallback || default}}`
+
+**Returns**: The computed value with proper type preservation
 
 #### IF - Conditional Execution
 Execute one of two commands based on a condition.
@@ -374,6 +518,8 @@ Execute one of two commands based on a condition.
 - `all(${{pattern}} == value)` - Returns true if all matching values satisfy the condition
 - `any(${{pattern}} == value)` - Returns true if any matching value satisfies the condition
 
+**Performance**: Expressions are automatically cached, making repeated IF conditions **76% faster**.
+
 #### FOR - Loop Over Pattern
 Iterate over keys matching a wildcard pattern.
 
@@ -393,6 +539,24 @@ Iterate over keys matching a wildcard pattern.
 
 The `loop_expr` uses wildcards (`*`) to match multiple keys. Captured values are available as `${{1}}`, `${{2}}`, etc.
 
+**All command types now work in FOR loops**, including DELETE, PRINT, RETURN, and nested FOR/COMMANDS.
+
+#### COMMANDS - Group Commands
+Execute multiple commands sequentially. Returns an array of all results.
+
+```json
+{
+  "type": "COMMANDS",
+  "commands": [
+    {"type": "INC", "key": "counter", "value": 1},
+    {"type": "REPLACE", "key": "status", "value": "updated"},
+    {"type": "RETURN", "key": "${{counter}}"}
+  ]
+}
+```
+
+**Returns**: Array of results from each command: `[5, "updated", 5]`
+
 #### NOOP - No Operation
 A no-op command that does nothing. Useful in conditional branches.
 
@@ -401,6 +565,8 @@ A no-op command that does nothing. Useful in conditional branches.
   "type": "NOOP"
 }
 ```
+
+**Returns**: `null`
 
 ---
 
@@ -414,6 +580,34 @@ Use `${{...}}` syntax to reference values dynamically within commands and trigge
 - `${{parent/child}}` → Gets nested values
 - `${{some/*/value}}` → Wildcard pattern (returns array of matching values)
 
+### Optional Values with Fallback 🆕
+
+Gracefully handle missing keys with fallback syntax:
+
+```json
+{
+  "type": "RETURN",
+  "key": "${{config/timeout || 30}}"
+}
+```
+
+**Fallback chain**:
+```json
+{
+  "type": "RETURN",
+  "key": "${{primary || secondary || default}}"
+}
+```
+
+**Features**:
+- Tries each key in order until one exists
+- Last value is treated as literal default
+- Supports numbers, booleans, strings, null
+- Works in string templates: `"Hello, ${{name || Guest}}!"`
+- Type-preserving: `${{count || 0}}` returns integer 0, not string "0"
+
+**Not allowed**: `${{users/*/name || unknown}}` (wildcards with fallback)
+
 ### Captured Values in FOR Loops
 
 When using `FOR` with wildcards, captured segments are available:
@@ -424,9 +618,12 @@ When using `FOR` with wildcards, captured segments are available:
   "loop_expr": "${{users/*/profile/name}}",
   "commands": [
     {
-      "type": "REPLACE",
-      "key": "users/${{1}}/lastSeen",
-      "value": "${{timestamp}}"
+      "type": "DELETE",
+      "key": "users/${{1}}/cache"
+    },
+    {
+      "type": "PRINT",
+      "messages": ["Cleared cache for user ${{1}}"]
     }
   ]
 }
@@ -435,6 +632,7 @@ When using `FOR` with wildcards, captured segments are available:
 In this example:
 - `${{1}}` = the value captured by the first `*` (e.g., "user-123")
 - The loop iterates over all matching `users/*/profile/name` paths
+- All command types (DELETE, PRINT, RETURN, etc.) now receive captures
 
 ### String Interpolation
 
@@ -449,7 +647,7 @@ You can embed interpolated values in strings:
 
 ### Expression Evaluation
 
-Conditions support expressions:
+Conditions support expressions with automatic caching for performance:
 
 ```json
 {
@@ -563,9 +761,9 @@ Set TTL when creating a cache:
 
 ## 💡 Use Cases & Examples
 
-### Example 1: Job Progress Tracking
+### Example 1: Job Progress Tracking with Cascading Triggers
 
-Track progress of a distributed job across multiple domains.
+Track progress of a distributed job across multiple domains with automatic completion detection.
 
 **Step 1: Create cache and initialize domains**
 
@@ -631,7 +829,7 @@ curl -X POST http://localhost:8080/api/v1/triggers \
   }'
 ```
 
-**Step 4: Decrement countdowns**
+**Step 4: Decrement countdowns and see automatic completion**
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/commands/execute \
@@ -643,11 +841,7 @@ curl -X POST http://localhost:8080/api/v1/commands/execute \
         "type": "FOR",
         "loop_expr": "${{domains/*/countdown}}",
         "commands": [
-          {
-            "type": "INC",
-            "key": "domains/${{1}}/countdown",
-            "value": -1
-          }
+          {"type": "INC", "key": "domains/${{1}}/countdown", "value": -1}
         ]
       },
       {
@@ -658,51 +852,47 @@ curl -X POST http://localhost:8080/api/v1/commands/execute \
   }'
 ```
 
-The triggers will automatically fire as countdowns reach zero, updating statuses accordingly.
+The triggers will automatically fire as countdowns reach zero, cascading to mark the entire job complete.
 
-### Example 2: User Session Management
-
-Manage user sessions with automatic expiration.
+### Example 2: Optional Values for Configuration
 
 ```bash
-# Create session cache
-curl -X POST http://localhost:8080/api/v1/caches \
+curl -X POST http://localhost:8080/api/v1/commands/execute \
   -H "Content-Type: application/json" \
-  -d '{"name": "sessions"}'
-
-# Create session with 30-minute TTL
-curl -X POST http://localhost:8080/api/v1/keys \
-  -H "Content-Type: application/json" \
-  -H "X-Cache-Name: sessions" \
-  -d '{
-    "entries": {
-      "user-123": {
-        "userId": 123,
-        "email": "user@example.com",
-        "lastActivity": "2024-01-01T12:00:00Z"
-      }
-    },
-    "ttl": {
-      "user-123": 1800000
-    }
-  }'
-
-# Update last activity
-curl -X PATCH http://localhost:8080/api/v1/keys/user-123 \
-  -H "Content-Type: application/json" \
-  -H "X-Cache-Name: sessions" \
+  -H "X-Cache-Name: config" \
   -d '{
     "commands": [
       {
-        "type": "REPLACE",
-        "path": "lastActivity",
-        "value": "2024-01-01T12:05:00Z"
+        "type": "RETURN",
+        "key": "Timeout: ${{config/timeout || 30}}s, Retries: ${{config/retries || 3}}"
       }
     ]
   }'
 ```
 
-### Example 3: Real-time Counter with Conditions
+Returns graceful defaults even if config keys don't exist: `"Timeout: 30s, Retries: 3"`
+
+### Example 3: Bulk Cleanup with DELETE
+
+```bash
+curl -X POST http://localhost:8080/api/v1/commands/execute \
+  -H "Content-Type: application/json" \
+  -H "X-Cache-Name: my-cache" \
+  -d '{
+    "commands": [
+      {
+        "type": "DELETE",
+        "key": "sessions/*/expired"
+      },
+      {
+        "type": "RETURN",
+        "key": "Cleaned up ${{deleted_count}} expired sessions"
+      }
+    ]
+  }'
+```
+
+### Example 4: Real-time Counter with Improved Return Values
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/commands/execute \
@@ -733,37 +923,7 @@ curl -X POST http://localhost:8080/api/v1/commands/execute \
   }'
 ```
 
-### Example 4: Monitoring with any() Function
-
-Check if any service is down:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/commands/execute \
-  -H "Content-Type: application/json" \
-  -H "X-Cache-Name: monitoring" \
-  -d '{
-    "commands": [
-      {
-        "type": "IF",
-        "condition": "any(${{services/*/status}} == \"down\")",
-        "if_true": {
-          "type": "REPLACE",
-          "key": "alert",
-          "value": "Service outage detected"
-        },
-        "if_false": {
-          "type": "REPLACE",
-          "key": "alert",
-          "value": "All services operational"
-        }
-      },
-      {
-        "type": "RETURN",
-        "key": "${{alert}}"
-      }
-    ]
-  }'
-```
+Now returns: `[1001, "reached", "Current visitors: 1001"]` - all commands return their values!
 
 ---
 
@@ -930,22 +1090,46 @@ go test -bench=. -benchmem -run=^$ -benchtime=500ms ./pkg/caches
 
 **Note**: The `-run=^$` flag skips regular tests and only runs benchmarks, avoiding test log output.
 
+### Performance Highlights
+
+Recent optimizations deliver exceptional results:
+
+| Operation | Performance | Improvement |
+|-----------|-------------|-------------|
+| **Simple Get** | 33 ns/op | Baseline |
+| **Nested Get** | 83 ns/op | Baseline |
+| **Replace** | 112 ns/op | Zero cost for return value |
+| **Increment** | 142 ns/op | Slightly faster despite return value |
+| **IF (simple)** | 5,882 ns/op | **19% faster** with caching |
+| **IF (any/all)** | 58,152 ns/op | **76% faster** with caching |
+| **Complex Workflow** | 58,523 ns/op | **22% faster overall** |
+
+**Memory improvements**:
+- IF expressions: **6-78% less memory** with caching
+- Complex scenarios: **14% less memory**, **26% fewer allocations**
+
 Available benchmarks include:
 - **Cache Operations**: Create, Get, Replace, Delete, Increment, nested operations, batch operations
 - **Command Execution**: INC, REPLACE, IF, FOR, value interpolation, complex scenarios
 - **Wildcard Patterns**: Pattern matching with single/multiple wildcards
 - **Container Operations**: Array operations, data retrieval, wildcard key matching
+- **Concurrent Access**: Multi-threaded Get, Replace, and mixed operations
 
 ---
 
 ## 📦 Postman Collections
 
-The repository includes Postman collections for testing:
+The repository includes comprehensive Postman collections:
 
-- `internal/api/v1/postman/map-cache-api-full.postman_collection.json` - Complete API collection
-- `internal/api/v1/postman/map-cache-scenario-countdown.postman_collection.json` - Countdown scenario walkthrough
+- **Comprehensive Examples** (`map-cache-examples.postman_collection.json`) - 50+ examples including:
+  - All command types (INC, REPLACE, DELETE, IF, FOR, RETURN)
+  - Redis workflow replacements (rate limiting, sessions, shopping carts, leaderboards)
+  - Advanced patterns (triggers, cascading workflows, multi-tenant scenarios)
+  - New features (optional values, expression caching, wildcard operations)
+- **API Reference** (`map-cache-api-full.postman_collection.json`) - Complete endpoint documentation
+- **Countdown Tutorial** (`map-cache-scenario-countdown.postman_collection.json`) - Step-by-step reactive pattern example
 
-Import these into Postman to explore the API interactively.
+See `internal/api/v1/postman/README.md` for detailed usage instructions and pattern examples.
 
 ---
 
@@ -967,6 +1151,9 @@ Configure the service using environment variables:
 - **Atomic Operations**: Commands execute in transactions for consistency
 - **Pattern Matching**: Wildcard support for flexible key matching
 - **Event System**: Triggers enable reactive programming patterns
+- **Expression Caching**: Compiled expressions cached for 76% faster conditionals
+- **Type Preservation**: JSON values maintain their native types through all operations
+- **Zero Allocations**: Optimized hot paths with zero-allocation cache lookups
 
 ---
 
@@ -989,4 +1176,4 @@ For questions or support, contact [dave@goodblaster.com](mailto:dave@goodblaster
 - **API Documentation**: Available at `/api/v1/docs` when the server is running
 - **OpenAPI Spec**: Available at `/api/v1/docs/openapi.yaml`
 - **Health Check**: `GET /status`
-
+- **GitHub**: https://github.com/goodblaster/map-cache

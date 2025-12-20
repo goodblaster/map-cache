@@ -1,0 +1,1293 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "map-cache - Comprehensive Examples",
+		"description": "Comprehensive examples demonstrating map-cache capabilities including Redis workflow replacements, advanced patterns, and new features",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Getting Started",
+			"description": "Basic operations to get familiar with map-cache",
+			"item": [
+				{
+					"name": "Create a Cache",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"my-cache\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/caches",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "caches"]
+						},
+						"description": "Create a new cache instance"
+					},
+					"response": []
+				},
+				{
+					"name": "Store Simple Keys",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"username\": \"alice\",\n    \"score\": 100,\n    \"active\": true\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Store simple key-value pairs"
+					},
+					"response": []
+				},
+				{
+					"name": "Store Nested Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"user\": {\n      \"profile\": {\n        \"name\": \"Alice\",\n        \"email\": \"alice@example.com\"\n      },\n      \"settings\": {\n        \"theme\": \"dark\",\n        \"notifications\": true\n      }\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Store nested JSON structures"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Nested Value",
+					"request": {
+						"method": "GET",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys/user/profile/name",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys", "user", "profile", "name"]
+						},
+						"description": "Access nested values using path notation"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Command System",
+			"description": "Examples of all command types",
+			"item": [
+				{
+					"name": "INC - Increment Counter",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"INC\",\n      \"key\": \"score\",\n      \"value\": 10\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{score}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Increment a numeric value and return the new value"
+					},
+					"response": []
+				},
+				{
+					"name": "REPLACE - Update Value",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"REPLACE\",\n      \"key\": \"username\",\n      \"value\": \"bob\"\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{username}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Replace an existing value"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE - Remove Key",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"DELETE\",\n      \"key\": \"username\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Delete a key and return its value"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE - Wildcard Pattern",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"DELETE\",\n      \"key\": \"user/settings/*\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Delete multiple keys matching a pattern"
+					},
+					"response": []
+				},
+				{
+					"name": "IF - Setup Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"score\": 150,\n    \"level\": \"unknown\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup: Create score and level keys for IF example"
+					},
+					"response": []
+				},
+				{
+					"name": "IF - Conditional Logic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"IF\",\n      \"condition\": \"${{score}} > 100\",\n      \"if_true\": {\n        \"type\": \"REPLACE\",\n        \"key\": \"level\",\n        \"value\": \"expert\"\n      },\n      \"if_false\": {\n        \"type\": \"REPLACE\",\n        \"key\": \"level\",\n        \"value\": \"beginner\"\n      }\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{level}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Execute commands conditionally based on expressions. Run 'IF - Setup Data' first."
+					},
+					"response": []
+				},
+				{
+					"name": "FOR - Setup Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"users\": {\n      \"alice\": {\"score\": 100, \"active\": true},\n      \"bob\": {\"score\": 85, \"active\": true},\n      \"charlie\": {\"score\": 120, \"active\": false}\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup: Create users with scores for FOR example"
+					},
+					"response": []
+				},
+				{
+					"name": "FOR - Loop Over Wildcards",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"FOR\",\n      \"loop_expr\": \"${{users/*/score}}\",\n      \"command\": {\n        \"type\": \"INC\",\n        \"key\": \"users/${{1}}/score\",\n        \"value\": 5\n      }\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{users/*/score}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Loop over all matching keys with wildcard patterns. Run 'FOR - Setup Data' first."
+					},
+					"response": []
+				},
+				{
+					"name": "RETURN - With Interpolation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"User: ${{username}}, Score: ${{score}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Return computed values with string interpolation"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. New Features",
+			"description": "Examples of recently added features",
+			"item": [
+				{
+					"name": "Optional Values - Fallback Chain",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{user/premium || user/trial || false}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Use fallback values when keys don't exist. Tries each key in order, returns literal value if all fail"
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - With Defaults (Setup)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"user\": {\n      \"settings\": {\n        \"theme\": \"dark\"\n      }\n    },\n    \"defaults\": {\n      \"theme\": \"light\",\n      \"notifications\": true,\n      \"maxItems\": 50\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup: Create partial user settings (only theme exists, notifications and maxItems missing)"
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - DOES NOT WORK",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": {\n        \"theme\": \"${{user/settings/theme || defaults/theme}}\",\n        \"notifications\": \"${{user/settings/notifications || defaults/notifications}}\",\n        \"maxItems\": \"${{user/settings/maxItems || defaults/maxItems}}\"\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "⚠️ This does NOT work - interpolation doesn't happen in object values. The || syntax only works when RETURN's key is a string, not an object."
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - Single Value (Works)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{user/settings/theme || defaults/theme}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Optional values work for single string returns. Run 'Optional Values - With Defaults (Setup)' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Optional Values - Build Object Result",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"COMMANDS\",\n      \"commands\": [\n        {\"type\": \"REPLACE\", \"key\": \"result/theme\", \"value\": \"light\"},\n        {\"type\": \"REPLACE\", \"key\": \"result/notifications\", \"value\": true},\n        {\"type\": \"REPLACE\", \"key\": \"result/maxItems\", \"value\": 50}\n      ]\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{result}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Limitation: The || syntax only works in RETURN's key when it's a string. For objects, build them with literal values or existing keys."
+					},
+					"response": []
+				},
+				{
+					"name": "Expression Caching - Performance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"FOR\",\n      \"loop_expr\": \"${{users/*/score}}\",\n      \"command\": {\n        \"type\": \"IF\",\n        \"condition\": \"${{users/${{1}}/score}} > 100 && ${{users/${{1}}/active}} == true\",\n        \"if_true\": {\n          \"type\": \"REPLACE\",\n          \"key\": \"users/${{1}}/badge\",\n          \"value\": \"gold\"\n        },\n        \"if_false\": {\n          \"type\": \"NOOP\"\n        }\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Complex expressions are automatically cached (19-76% faster). Run 'FOR - Setup Data' from Command System section first."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Redis Replacements",
+			"description": "Common Redis patterns implemented with map-cache",
+			"item": [
+				{
+					"name": "Rate Limiting - Setup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"ratelimit\": {\n      \"user123\": {\n        \"count\": 0,\n        \"window_start\": 1704067200000\n      }\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Initialize rate limiting data structure"
+					},
+					"response": []
+				},
+				{
+					"name": "Rate Limiting - Check and Increment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"IF\",\n      \"condition\": \"${{ratelimit/user123/count}} < 100\",\n      \"if_true\": {\n        \"type\": \"COMMANDS\",\n        \"commands\": [\n          {\n            \"type\": \"INC\",\n            \"key\": \"ratelimit/user123/count\",\n            \"value\": 1\n          },\n          {\n            \"type\": \"RETURN\",\n            \"key\": {\"allowed\": true, \"remaining\": \"${{ratelimit/user123/count}}\"}\n          }\n        ]\n      },\n      \"if_false\": {\n        \"type\": \"RETURN\",\n        \"key\": {\"allowed\": false, \"retry_after\": 60}\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Check rate limit and increment if allowed (replaces Redis INCR with TTL)"
+					},
+					"response": []
+				},
+				{
+					"name": "Session Management - Create Session",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"sessions\": {\n      \"sess_abc123\": {\n        \"user_id\": \"user123\",\n        \"email\": \"alice@example.com\",\n        \"created_at\": 1704067200000,\n        \"last_active\": 1704067200000\n      }\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Store session data (replaces Redis HSET)"
+					},
+					"response": []
+				},
+				{
+					"name": "Session Management - Update Activity",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"REPLACE\",\n      \"key\": \"sessions/sess_abc123/last_active\",\n      \"value\": 1704070800000\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{sessions/sess_abc123}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Update session last active timestamp"
+					},
+					"response": []
+				},
+				{
+					"name": "Shopping Cart - Setup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"carts\": {\n      \"user123\": {\n        \"items\": {\n          \"prod_001\": {\"name\": \"Laptop\", \"price\": 999.99, \"quantity\": 1},\n          \"prod_002\": {\"name\": \"Mouse\", \"price\": 29.99, \"quantity\": 2}\n        },\n        \"total\": 0\n      }\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Initialize shopping cart"
+					},
+					"response": []
+				},
+				{
+					"name": "Shopping Cart - Update Quantity",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"INC\",\n      \"key\": \"carts/user123/items/prod_002/quantity\",\n      \"value\": 1\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{carts/user123/items/prod_002}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Increment item quantity in cart"
+					},
+					"response": []
+				},
+				{
+					"name": "Shopping Cart - Remove Item",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"DELETE\",\n      \"key\": \"carts/user123/items/prod_001\"\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{carts/user123/items}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Remove item from cart and return remaining items"
+					},
+					"response": []
+				},
+				{
+					"name": "Leaderboard - Setup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"leaderboard\": {\n      \"alice\": {\"score\": 1500, \"rank\": 0},\n      \"bob\": {\"score\": 2100, \"rank\": 0},\n      \"charlie\": {\"score\": 1800, \"rank\": 0}\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup leaderboard with player scores"
+					},
+					"response": []
+				},
+				{
+					"name": "Leaderboard - Update Score",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"INC\",\n      \"key\": \"leaderboard/alice/score\",\n      \"value\": 250\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{leaderboard/*/score}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Update player score and return all scores (replaces Redis ZINCRBY)"
+					},
+					"response": []
+				},
+				{
+					"name": "Counter Pattern - Multi Counter",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"stats\": {\n      \"page_views\": 0,\n      \"api_calls\": 0,\n      \"errors\": 0\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup multiple counters"
+					},
+					"response": []
+				},
+				{
+					"name": "Counter Pattern - Increment Multiple",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"COMMANDS\",\n      \"commands\": [\n        {\"type\": \"INC\", \"key\": \"stats/page_views\", \"value\": 1},\n        {\"type\": \"INC\", \"key\": \"stats/api_calls\", \"value\": 1}\n      ]\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{stats}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Atomically increment multiple counters"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Advanced Patterns",
+			"description": "Triggers, workflows, and complex scenarios",
+			"item": [
+				{
+					"name": "Workflow - Job Queue Setup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"jobs\": {\n      \"job_001\": {\"status\": \"pending\", \"progress\": 0, \"total\": 100},\n      \"job_002\": {\"status\": \"pending\", \"progress\": 0, \"total\": 50}\n    },\n    \"queue_status\": \"processing\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup job queue with multiple jobs"
+					},
+					"response": []
+				},
+				{
+					"name": "Workflow - Auto-complete Trigger",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key\": \"jobs/*/progress\",\n  \"command\": {\n    \"type\": \"IF\",\n    \"condition\": \"${{jobs/${{1}}/progress}} >= ${{jobs/${{1}}/total}}\",\n    \"if_true\": {\n      \"type\": \"REPLACE\",\n      \"key\": \"jobs/${{1}}/status\",\n      \"value\": \"complete\"\n    },\n    \"if_false\": {\n      \"type\": \"NOOP\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/triggers",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "triggers"]
+						},
+						"description": "Trigger that auto-completes jobs when progress reaches total"
+					},
+					"response": []
+				},
+				{
+					"name": "Workflow - Cascade Completion Trigger",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key\": \"jobs/*/status\",\n  \"command\": {\n    \"type\": \"IF\",\n    \"condition\": \"all(${{jobs/*/status}} == \\\"complete\\\")\",\n    \"if_true\": {\n      \"type\": \"REPLACE\",\n      \"key\": \"queue_status\",\n      \"value\": \"complete\"\n    },\n    \"if_false\": {\n      \"type\": \"NOOP\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/triggers",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "triggers"]
+						},
+						"description": "Cascade trigger - marks queue complete when all jobs are done"
+					},
+					"response": []
+				},
+				{
+					"name": "Workflow - Update Job Progress",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"INC\",\n      \"key\": \"jobs/job_001/progress\",\n      \"value\": 25\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": {\n        \"job_status\": \"${{jobs/job_001/status}}\",\n        \"queue_status\": \"${{queue_status}}\"\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Update progress - triggers will auto-update status when complete"
+					},
+					"response": []
+				},
+				{
+					"name": "Countdown Pattern - Setup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"domains\": {\n      \"domain-1\": {\"status\": \"busy\", \"countdown\": 3},\n      \"domain-2\": {\"status\": \"busy\", \"countdown\": 3},\n      \"domain-3\": {\"status\": \"busy\", \"countdown\": 3}\n    },\n    \"overall_status\": \"running\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup countdown pattern with multiple domains"
+					},
+					"response": []
+				},
+				{
+					"name": "Countdown Pattern - Countdown Trigger",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key\": \"domains/*/countdown\",\n  \"command\": {\n    \"type\": \"IF\",\n    \"condition\": \"${{domains/${{1}}/countdown}} <= 0\",\n    \"if_true\": {\n      \"type\": \"REPLACE\",\n      \"key\": \"domains/${{1}}/status\",\n      \"value\": \"complete\"\n    },\n    \"if_false\": {\n      \"type\": \"NOOP\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/triggers",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "triggers"]
+						},
+						"description": "When countdown reaches 0, mark domain as complete"
+					},
+					"response": []
+				},
+				{
+					"name": "Countdown Pattern - Overall Status Trigger",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key\": \"domains/*/status\",\n  \"command\": {\n    \"type\": \"IF\",\n    \"condition\": \"all(${{domains/*/status}} == \\\"complete\\\")\",\n    \"if_true\": {\n      \"type\": \"REPLACE\",\n      \"key\": \"overall_status\",\n      \"value\": \"complete\"\n    },\n    \"if_false\": {\n      \"type\": \"NOOP\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/triggers",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "triggers"]
+						},
+						"description": "When all domains complete, mark overall status as complete"
+					},
+					"response": []
+				},
+				{
+					"name": "Countdown Pattern - Decrement All",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"FOR\",\n      \"loop_expr\": \"${{domains/*/countdown}}\",\n      \"command\": {\n        \"type\": \"INC\",\n        \"key\": \"domains/${{1}}/countdown\",\n        \"value\": -1\n      }\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": {\n        \"countdowns\": \"${{domains/*/countdown}}\",\n        \"statuses\": \"${{domains/*/status}}\",\n        \"overall\": \"${{overall_status}}\"\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Decrement all countdowns at once - triggers cascade automatically"
+					},
+					"response": []
+				},
+				{
+					"name": "Pub/Sub Pattern - Event Logger Trigger",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key\": \"events/*\",\n  \"command\": {\n    \"type\": \"PRINT\",\n    \"messages\": [\"Event triggered: ${{1}} with value ${{events/${{1}}}}\"]\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/triggers",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "triggers"]
+						},
+						"description": "Log all events matching pattern (pub/sub with triggers)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Multi-tenant Scenarios",
+			"description": "Managing data for multiple tenants/users",
+			"item": [
+				{
+					"name": "Multi-tenant - Setup Users",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"tenants\": {\n      \"acme\": {\n        \"users\": {\n          \"alice\": {\"role\": \"admin\", \"active\": true, \"quota\": 1000},\n          \"bob\": {\"role\": \"user\", \"active\": true, \"quota\": 100}\n        },\n        \"settings\": {\"max_users\": 10, \"tier\": \"premium\"}\n      },\n      \"globex\": {\n        \"users\": {\n          \"charlie\": {\"role\": \"admin\", \"active\": true, \"quota\": 500}\n        },\n        \"settings\": {\"max_users\": 5, \"tier\": \"basic\"}\n      }\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup multi-tenant data structure"
+					},
+					"response": []
+				},
+				{
+					"name": "Multi-tenant - Get All Active Users",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{tenants/*/users/*/active}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Get active status for all users across all tenants"
+					},
+					"response": []
+				},
+				{
+					"name": "Multi-tenant - Bulk Update Quotas",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"FOR\",\n      \"loop_expr\": \"${{tenants/acme/users/*/quota}}\",\n      \"command\": {\n        \"type\": \"IF\",\n        \"condition\": \"${{tenants/acme/users/${{1}}/role}} == \\\"admin\\\"\",\n        \"if_true\": {\n          \"type\": \"INC\",\n          \"key\": \"tenants/acme/users/${{1}}/quota\",\n          \"value\": 500\n        },\n        \"if_false\": {\n          \"type\": \"INC\",\n          \"key\": \"tenants/acme/users/${{1}}/quota\",\n          \"value\": 50\n        }\n      }\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{tenants/acme/users}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Bulk update quotas based on user role"
+					},
+					"response": []
+				},
+				{
+					"name": "Multi-tenant - Deactivate User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"REPLACE\",\n      \"key\": \"tenants/acme/users/bob/active\",\n      \"value\": false\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{tenants/acme/users/bob}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Deactivate a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Multi-tenant - Count Active Users Per Tenant",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": {\n        \"acme_active\": \"${{tenants/acme/users/*/active}}\",\n        \"globex_active\": \"${{tenants/globex/users/*/active}}\"\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Get active users for each tenant (arrays can be counted in application)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "7. Wildcard Operations",
+			"description": "Advanced wildcard pattern matching",
+			"item": [
+				{
+					"name": "Wildcard - Setup Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"users\": {\n      \"alice\": {\"email\": \"alice@example.com\", \"premium\": true},\n      \"bob\": {\"email\": \"bob@example.com\", \"premium\": false},\n      \"charlie\": {\"email\": \"charlie@example.com\", \"premium\": true}\n    },\n    \"domains\": {\n      \"api\": {\"status\": \"ready\"},\n      \"web\": {\"status\": \"ready\"},\n      \"mobile\": {\"status\": \"pending\"}\n    },\n    \"cache\": {\n      \"temp\": {\n        \"session1\": \"data1\",\n        \"session2\": \"data2\"\n      }\n    },\n    \"deployment_ready\": false\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup: Create data for wildcard examples"
+					},
+					"response": []
+				},
+				{
+					"name": "Wildcard - Get All Matching Values",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{users/*/email}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Returns array of all matching values. Run 'Wildcard - Setup Data' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Wildcard - Conditional with any()",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"IF\",\n      \"condition\": \"any(${{users/*/premium}} == true)\",\n      \"if_true\": {\n        \"type\": \"RETURN\",\n        \"key\": \"Has premium users\"\n      },\n      \"if_false\": {\n        \"type\": \"RETURN\",\n        \"key\": \"No premium users\"\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Check if ANY matching value meets condition. Run 'Wildcard - Setup Data' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Wildcard - Conditional with all()",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"IF\",\n      \"condition\": \"all(${{domains/*/status}} == \\\"ready\\\")\",\n      \"if_true\": {\n        \"type\": \"REPLACE\",\n        \"key\": \"deployment_ready\",\n        \"value\": true\n      },\n      \"if_false\": {\n        \"type\": \"REPLACE\",\n        \"key\": \"deployment_ready\",\n        \"value\": false\n      }\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{deployment_ready}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Check if ALL matching values meet condition. Run 'Wildcard - Setup Data' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Wildcard - Delete Pattern",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"DELETE\",\n      \"key\": \"cache/temp/*\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Delete all keys matching pattern, returns deleted values. Run 'Wildcard - Setup Data' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Wildcard - Nested Iteration",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"FOR\",\n      \"loop_expr\": \"${{tenants/*/users/*/quota}}\",\n      \"command\": {\n        \"type\": \"PRINT\",\n        \"messages\": [\"Tenant ${{1}} user ${{2}} has quota ${{tenants/${{1}}/users/${{2}}/quota}}\"]\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Use captured segments (${{1}}, ${{2}}) from nested wildcards"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "8. Performance Examples",
+			"description": "Examples demonstrating performance optimizations",
+			"item": [
+				{
+					"name": "Performance - Setup Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"entries\": {\n    \"user\": {\n      \"name\": \"Unknown\",\n      \"email\": \"unknown@example.com\",\n      \"verified\": false,\n      \"login_count\": 0\n    },\n    \"products\": {\n      \"laptop\": {\"price\": 999, \"in_stock\": true, \"featured\": false},\n      \"mouse\": {\"price\": 29, \"in_stock\": true, \"featured\": false},\n      \"monitor\": {\"price\": 450, \"in_stock\": false, \"featured\": false}\n    },\n    \"inventory\": {\n      \"product_001\": {\"stock\": 10, \"sold\": 0}\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/keys",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "keys"]
+						},
+						"description": "Setup: Create data for performance examples"
+					},
+					"response": []
+				},
+				{
+					"name": "Batch Operations - Multiple Updates",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"COMMANDS\",\n      \"commands\": [\n        {\"type\": \"REPLACE\", \"key\": \"user/name\", \"value\": \"Alice\"},\n        {\"type\": \"REPLACE\", \"key\": \"user/email\", \"value\": \"alice@example.com\"},\n        {\"type\": \"REPLACE\", \"key\": \"user/verified\", \"value\": true},\n        {\"type\": \"INC\", \"key\": \"user/login_count\", \"value\": 1}\n      ]\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{user}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Batch multiple operations in single transaction. Run 'Performance - Setup Data' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Expression Caching - Repeated Conditionals",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"FOR\",\n      \"loop_expr\": \"${{products/*/price}}\",\n      \"command\": {\n        \"type\": \"IF\",\n        \"condition\": \"${{products/${{1}}/price}} > 100 && ${{products/${{1}}/in_stock}} == true\",\n        \"if_true\": {\n          \"type\": \"REPLACE\",\n          \"key\": \"products/${{1}}/featured\",\n          \"value\": true\n        },\n        \"if_false\": {\n          \"type\": \"NOOP\"\n        }\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Same expression used repeatedly - cached for 19-76% performance gain. Run 'Performance - Setup Data' first."
+					},
+					"response": []
+				},
+				{
+					"name": "Atomic Read-Modify-Write",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Content-Type", "value": "application/json"},
+							{"key": "X-Cache-Name", "value": "my-cache"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"IF\",\n      \"condition\": \"${{inventory/product_001/stock}} >= 1\",\n      \"if_true\": {\n        \"type\": \"COMMANDS\",\n        \"commands\": [\n          {\"type\": \"INC\", \"key\": \"inventory/product_001/stock\", \"value\": -1},\n          {\"type\": \"INC\", \"key\": \"inventory/product_001/sold\", \"value\": 1},\n          {\"type\": \"RETURN\", \"key\": {\"success\": true, \"remaining\": \"${{inventory/product_001/stock}}\"}}\n        ]\n      },\n      \"if_false\": {\n        \"type\": \"RETURN\",\n        \"key\": {\"success\": false, \"error\": \"out of stock\"}\n      }\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "commands", "execute"]
+						},
+						"description": "Atomic operation - check stock, decrement, and return in single transaction. Run 'Performance - Setup Data' first."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

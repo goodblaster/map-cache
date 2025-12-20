@@ -82,21 +82,33 @@ The service is configured via environment variables:
 **3. Command System**
 - Commands provide atomic batch operations with conditional logic and loops
 - All commands implement the `Command` interface with a `Do(ctx, cache)` method
+- **All commands now return values** - INC/REPLACE/DELETE return their new/deleted values
 - Command types in `cmd_*.go` files:
-  - `INC`: Increment/decrement numeric values
-  - `REPLACE`: Overwrite key values
+  - `INC`: Increment/decrement numeric values (returns new value)
+  - `REPLACE`: Overwrite key values (returns new value)
+  - `DELETE`: Remove keys with wildcard support (returns deleted value(s))
+  - `GET`: Retrieve values with wildcard support
   - `RETURN`: Return computed values (typically final command)
-  - `IF`: Conditional execution based on expressions
+  - `IF`: Conditional execution based on expressions (uses expression caching)
   - `FOR`: Loop over wildcard patterns (e.g., `users/*/name`)
+  - `COMMANDS`: Group multiple commands (returns array of results)
+  - `PRINT`: Log formatted messages
   - `NOOP`: No-operation placeholder
 - Commands execute in transactions via `cache.Execute()` for consistency
 
 **4. Value Interpolation**
 - Syntax: `${{key/path}}` for dynamic value references
 - Wildcard patterns: `${{users/*/name}}` returns array of matches
+- **Optional values** (NEW): `${{key || default}}` provides graceful fallbacks
+  - Fallback chain: `${{primary || secondary || default}}`
+  - Type-preserving: `${{count || 0}}` returns integer 0
+  - Works in templates: `"Hello, ${{name || Guest}}!"`
+  - Not allowed with wildcards: `${{users/*/name || unknown}}` errors
 - Loop captures: In `FOR` loops, `${{1}}`, `${{2}}` access wildcard segments
 - String embedding: `"Status: ${{status}}, Count: ${{count}}"`
 - Expression evaluation: Uses `github.com/Knetic/govaluate` for conditionals
+  - **Expression caching** (NEW): Compiled expressions cached globally via `sync.Map`
+  - Provides 19-76% performance improvement for repeated IF conditions
 - Aggregation functions: `all()` and `any()` for pattern-based conditions
 
 **5. Trigger System**
@@ -162,6 +174,13 @@ defer cache.Release("operation-name")
 - Each command type has its own file: `cmd_<type>.go`
 - Commands must be JSON-marshalable (see `cmd_marshaling.go`)
 - Use `CmdResult` to return values from command execution
+- **All commands now return meaningful values**:
+  - INC: returns new value after increment (not nil)
+  - REPLACE: returns new value (not nil)
+  - DELETE: returns deleted value(s) - array for wildcards
+  - GET: returns fetched value(s) - map for wildcards
+  - RETURN: returns computed value
+  - IF/FOR/COMMANDS: return results from nested commands
 
 ### Trigger Pattern Matching
 - Wildcards (`*`) match path segments
