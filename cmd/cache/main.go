@@ -18,6 +18,7 @@ import (
 	"github.com/goodblaster/map-cache/internal/build"
 	"github.com/goodblaster/map-cache/internal/config"
 	"github.com/goodblaster/map-cache/internal/log"
+	"github.com/goodblaster/map-cache/internal/telemetry"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -40,7 +41,20 @@ func main() {
 	// Initialize configuration
 	config.Init(log.Default())
 
-	err := caches.AddCache(caches.DefaultName)
+	// Initialize telemetry
+	shutdown, err := telemetry.Init(telemetry.Config{
+		Enabled:        config.TelemetryEnabled,
+		Exporter:       config.TelemetryExporter,
+		OTLPEndpoint:   config.OTLPEndpoint,
+		ServiceName:    config.ServiceName,
+		ServiceVersion: build.Version,
+	})
+	if err != nil {
+		log.WithError(err).Fatal("failed to initialize telemetry")
+	}
+	defer shutdown(context.Background())
+
+	err = caches.AddCache(caches.DefaultName)
 	if err != nil {
 		log.WithError(err).With("cache", caches.DefaultName).Fatal("failed to add default cache")
 	}
@@ -48,6 +62,11 @@ func main() {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+
+	// Only add telemetry middleware if enabled
+	if config.TelemetryEnabled && config.TelemetryExporter != "none" {
+		e.Use(telemetry.Middleware())
+	}
 
 	v1.SetupRoutes(e)
 	admin.SetupRoutes(e)
