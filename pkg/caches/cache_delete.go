@@ -19,7 +19,7 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 			if i, err := strconv.Atoi(lastStr); err == nil {
 				if err := cache.cmap.ArrayRemove(ctx, i, path[:len(path)-1]...); err != nil {
 					// Log but don't fail - deletion is best-effort for array elements
-					log.WithError(err).Warnf("failed to remove array element at index %d for key %s", i, key)
+					log.WithError(err).With("key", key).With("index", i).Warn("failed to remove array element")
 				}
 				continue
 			}
@@ -35,7 +35,7 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 
 		// Delete the key - log errors but don't fail (deletion is best-effort)
 		if err := cache.cmap.Delete(ctx, path...); err != nil {
-			log.WithError(err).Warnf("failed to delete key %s", key)
+			log.WithError(err).With("key", key).Warn("failed to delete key")
 		}
 	}
 	return nil

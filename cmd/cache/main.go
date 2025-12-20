@@ -42,7 +42,7 @@ func main() {
 
 	err := caches.AddCache(caches.DefaultName)
 	if err != nil {
-		log.WithError(err).Fatal("failed to add default cache")
+		log.WithError(err).With("cache", caches.DefaultName).Fatal("failed to add default cache")
 	}
 
 	e := echo.New()
@@ -62,9 +62,9 @@ func main() {
 
 	// Start server in a goroutine so we can handle shutdown signals
 	go func() {
-		log.Infof("starting server on %s", config.WebAddress)
+		log.With("address", config.WebAddress).Info("starting server")
 		if err := e.Start(config.WebAddress); err != nil && err != http.ErrServerClosed {
-			log.WithError(err).Fatal("failed to start web server")
+			log.WithError(err).With("address", config.WebAddress).Fatal("failed to start web server")
 		}
 	}()
 

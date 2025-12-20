@@ -53,7 +53,7 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 
 		// Skip expired keys - they're already expired, no need to set a timer
 		if duration <= 0 {
-			log.Warnf("skipping expired key %s during restore (expired %d ms ago)", key, -duration)
+			log.With("key", key).With("expired_ms_ago", -duration).Warn("skipping expired key during restore")
 			continue
 		}
 
@@ -61,7 +61,7 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 			// Delete the key when TTL expires
 			// Log errors but don't fail - TTL cleanup is best-effort
 			if err := cache.Delete(ctx, key); err != nil {
-				log.WithError(err).Warnf("failed to delete expired key %s during restore", key)
+				log.WithError(err).With("key", key).Warn("failed to delete expired key during restore")
 			}
 		})
 	}
@@ -82,7 +82,7 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 	// Delete the existing cache if it exists, and its expirations.
 	// Log errors but don't fail - deletion is best-effort before restore
 	if err := DeleteCache(cacheName); err != nil {
-		log.WithError(err).Warnf("failed to delete existing cache %s before restore", cacheName)
+		log.WithError(err).With("cache", cacheName).Warn("failed to delete existing cache before restore")
 	}
 
 	caches.Store(cacheName, cache)

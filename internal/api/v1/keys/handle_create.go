@@ -59,7 +59,7 @@ func handleCreate() echo.HandlerFunc {
 		// TTLs
 		for key, ttl := range req.TTL {
 			if err := cache.SetKeyTTL(ctx, key, ttl); err != nil {
-				log.WithError(err).Errorf("could not set cache expiration for key %q", key)
+				log.WithError(err).With("key", key).With("ttl_ms", ttl).Error("could not set cache expiration")
 			}
 		}
 
