@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -25,6 +26,9 @@ import (
 )
 
 func main() {
+	// Track server start time for uptime calculation
+	startTime := time.Now()
+
 	// Configure and create logger (this is the ONLY place logos is used directly)
 	var formatter logos.Formatter
 	if logFormat := os.Getenv("LOG_FORMAT"); logFormat == "json" {
@@ -71,11 +75,33 @@ func main() {
 	v1.SetupRoutes(e)
 	admin.SetupRoutes(e)
 
-	// Health check route
-	e.GET("/status", func(c echo.Context) error {
-		return c.JSON(200, map[string]any{
-			"status": "ok",
-			"build":  build.Info(),
+	// Health check endpoint (Kubernetes-friendly)
+	e.GET("/healthz", func(c echo.Context) error {
+		// Collect runtime statistics
+		var memStats runtime.MemStats
+		runtime.ReadMemStats(&memStats)
+
+		// Calculate uptime
+		uptime := time.Since(startTime)
+
+		// Get cache information
+		cacheList := caches.List()
+
+		return c.JSON(http.StatusOK, map[string]any{
+			"status":    "healthy",
+			"timestamp": time.Now().UTC(),
+			"uptime_seconds": int64(uptime.Seconds()),
+			"build":     build.Info(),
+			"system": map[string]any{
+				"goroutines":      runtime.NumGoroutine(),
+				"memory_alloc_mb": memStats.Alloc / 1024 / 1024,
+				"memory_sys_mb":   memStats.Sys / 1024 / 1024,
+				"gc_count":        memStats.NumGC,
+			},
+			"caches": map[string]any{
+				"count": len(cacheList),
+				"names": cacheList,
+			},
 		})
 	})
 

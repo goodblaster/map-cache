@@ -137,20 +137,32 @@ Once the server is running, visit:
 
 ## 🎯 Quick Start
 
-### 1. Check Server Status
+### 1. Check Server Health
 
 ```bash
-curl http://localhost:8080/status
+curl http://localhost:8080/healthz
 ```
 
 Response:
 ```json
 {
-  "status": "ok",
+  "status": "healthy",
+  "timestamp": "2025-01-10T12:34:56Z",
+  "uptime_seconds": 3600,
   "build": {
     "version": "1.0.0",
     "commit": "abc123",
     "date": "2024-01-01T00:00:00Z"
+  },
+  "system": {
+    "goroutines": 42,
+    "memory_alloc_mb": 12,
+    "memory_sys_mb": 24,
+    "gc_count": 5
+  },
+  "caches": {
+    "count": 1,
+    "names": ["default"]
   }
 }
 ```
@@ -1175,5 +1187,5 @@ For questions or support, contact [dave@goodblaster.com](mailto:dave@goodblaster
 
 - **API Documentation**: Available at `/api/v1/docs` when the server is running
 - **OpenAPI Spec**: Available at `/api/v1/docs/openapi.yaml`
-- **Health Check**: `GET /status`
+- **Health Check**: `GET /healthz`
 - **GitHub**: https://github.com/goodblaster/map-cache
