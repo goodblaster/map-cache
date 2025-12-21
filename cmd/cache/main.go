@@ -75,6 +75,26 @@ func main() {
 	v1.SetupRoutes(e)
 	admin.SetupRoutes(e)
 
+	// Start periodic cache metrics update (every 10 seconds)
+	metricsStopChan := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+
+		// Update immediately on start
+		v1.UpdateCacheMetrics()
+
+		for {
+			select {
+			case <-ticker.C:
+				v1.UpdateCacheMetrics()
+			case <-metricsStopChan:
+				return
+			}
+		}
+	}()
+	defer close(metricsStopChan)
+
 	// Health check endpoint (Kubernetes-friendly)
 	e.GET("/healthz", func(c echo.Context) error {
 		// Collect runtime statistics

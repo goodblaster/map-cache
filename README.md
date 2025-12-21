@@ -1183,9 +1183,69 @@ For questions or support, contact [dave@goodblaster.com](mailto:dave@goodblaster
 
 ---
 
+## 📊 Observability & Monitoring
+
+### Health Check
+
+The `/healthz` endpoint provides detailed server health information:
+
+```bash
+curl http://localhost:8080/healthz
+```
+
+Returns runtime metrics including uptime, memory usage, goroutine count, and cache statistics.
+
+### Prometheus Metrics
+
+Map-cache exposes Prometheus-compatible metrics at `/metrics`:
+
+```bash
+curl http://localhost:8080/metrics
+```
+
+**HTTP Metrics:**
+- `http_requests_total{method, path, status}` - Total HTTP requests by method, path, and status code
+- `http_request_duration_seconds{method, path}` - HTTP request latency histogram
+- `http_request_size_bytes{method, path}` - HTTP request size histogram
+- `http_response_size_bytes{method, path}` - HTTP response size histogram
+- `http_requests_in_flight` - Current number of HTTP requests being processed
+
+**Cache Metrics** (updated every 10 seconds):
+- `cache_size_bytes{cache}` - Current size of cache in bytes
+- `cache_keys_total{cache}` - Total number of keys in cache
+- `cache_activity_total{cache}` - Total operations performed on cache
+- `cache_long_operations_total{cache}` - Total long-running operations
+- `cache_timeout_operations_total{cache}` - Total timed-out operations
+- `caches_total` - Total number of active caches
+
+**Example Prometheus Queries:**
+```promql
+# P95 latency for API endpoints
+histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+
+# Request rate by endpoint
+rate(http_requests_total[5m])
+
+# Error rate
+rate(http_requests_total{status=~"5.."}[5m])
+
+# Cache memory usage
+sum(cache_size_bytes) by (cache)
+```
+
+**Grafana Dashboard:**
+Import metrics into Grafana to visualize:
+- Request rates and latencies
+- Error rates and status code distribution
+- Cache sizes and key counts
+- Long-running operation trends
+
+---
+
 ## 🔗 Related Resources
 
 - **API Documentation**: Available at `/api/v1/docs` when the server is running
 - **OpenAPI Spec**: Available at `/api/v1/docs/openapi.yaml`
 - **Health Check**: `GET /healthz`
+- **Prometheus Metrics**: `GET /metrics`
 - **GitHub**: https://github.com/goodblaster/map-cache
