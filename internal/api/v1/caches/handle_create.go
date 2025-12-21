@@ -44,7 +44,7 @@ func handleCreateCache() echo.HandlerFunc {
 		// Expiration
 		if req.TTL != nil {
 			if err := caches.SetCacheTTL(req.Name, *req.TTL); err != nil {
-				log.WithError(err).With("cache", req.Name).With("ttl_ms", *req.TTL).Error("could not set cache expiration")
+				log.FromContext(c.Request().Context()).WithError(err).With("cache", req.Name).With("ttl_ms", *req.TTL).Error("could not set cache expiration")
 			}
 		}
 

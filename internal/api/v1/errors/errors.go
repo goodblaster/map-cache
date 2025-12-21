@@ -41,7 +41,8 @@ func WebError(err error) error {
 func ApiError(c echo.Context, code int, errmsg any) error {
 	err, _ := errmsg.(error)
 	resp := NewErrorResponse(code, errmsg)
-	logger := log.With("request", c.Request().RequestURI).With("status", code)
+	// Use request-scoped logger from context to include request_id
+	logger := log.FromContext(c.Request().Context()).With("request", c.Request().RequestURI).With("status", code)
 
 	if err != nil {
 		resp.Internal = err

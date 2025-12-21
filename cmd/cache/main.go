@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/goodblaster/logos"
+	"github.com/goodblaster/map-cache/internal/api"
 	"github.com/goodblaster/map-cache/internal/api/admin"
 	v1 "github.com/goodblaster/map-cache/internal/api/v1"
 	"github.com/goodblaster/map-cache/internal/build"
@@ -64,7 +65,13 @@ func main() {
 	}
 
 	e := echo.New()
-	e.Use(middleware.Logger())
+
+	// Request ID middleware - MUST be first to ensure all logs/traces have correlation IDs
+	e.Use(api.RequestIDMiddleware)
+
+	// Logging middleware - placed after RequestIDMiddleware to include request IDs in logs
+	e.Use(api.LoggingMiddleware)
+
 	e.Use(middleware.Recover())
 
 	// Only add telemetry middleware if enabled

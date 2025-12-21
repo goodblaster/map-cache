@@ -79,12 +79,12 @@ func handleReplaceBatch() echo.HandlerFunc {
 		for key, ttl := range req.TTL {
 			if ttl == nil {
 				if err := cache.CancelKeyTTL(c.Request().Context(), key); err != nil {
-					log.WithError(err).With("key", key).Warn("could not cancel cache expiration")
+					log.FromContext(c.Request().Context()).WithError(err).With("key", key).Warn("could not cancel cache expiration")
 				}
 				continue
 			}
 			if err := cache.SetKeyTTL(c.Request().Context(), key, *ttl); err != nil {
-				log.WithError(err).With("key", key).With("ttl_ms", *ttl).Warn("could not set cache expiration")
+				log.FromContext(c.Request().Context()).WithError(err).With("key", key).With("ttl_ms", *ttl).Warn("could not set cache expiration")
 			}
 		}
 
