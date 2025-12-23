@@ -3,7 +3,6 @@ package errors
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/goodblaster/errors"

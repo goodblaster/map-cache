@@ -70,9 +70,10 @@ func main() {
 	// Custom error handler - centralized error logging and response formatting
 	e.HTTPErrorHandler = api.CustomErrorHandler
 
+	// Recover middleware - MUST be first to catch panics from all other middleware
 	e.Use(middleware.Recover())
 
-	// Request ID middleware - MUST be first to ensure all logs/traces have correlation IDs
+	// Request ID middleware - generates correlation IDs for all requests
 	e.Use(api.RequestIDMiddleware)
 
 	// Logging middleware - placed after RequestIDMiddleware to include request IDs in logs
