@@ -55,7 +55,7 @@ func TestLoggingMiddleware_LogsRequestCompletion(t *testing.T) {
 	e.ServeHTTP(rec, req)
 
 	// Verify request completion was logged at Info level
-	assert.Contains(t, mockLogger.Messages, "INFO", "Info should be called to log request completion")
+	assert.Contains(t, mockLogger.Messages, "INFO: %d %s %s", "Info should be called to log request completion")
 }
 
 func TestLoggingMiddleware_IncludesRequestID(t *testing.T) {

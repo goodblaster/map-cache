@@ -187,9 +187,11 @@ func TestHandlePatch(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handlePatch()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 
 	t.Run("invalid operation type", func(t *testing.T) {
@@ -213,8 +215,10 @@ func TestHandlePatch(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handlePatch()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 }

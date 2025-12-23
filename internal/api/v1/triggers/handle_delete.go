@@ -3,8 +3,6 @@ package triggers
 import (
 	"net/http"
 
-	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -14,12 +12,12 @@ func handleDeleteTrigger() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		id := c.Param("id")
 		if id == "" {
-			return v1errors.ApiError(c, http.StatusBadRequest, "missing trigger id")
+			return echo.NewHTTPError(http.StatusBadRequest, "missing trigger id")
 		}
 
 		cache := Cache(c)
 		if err := cache.DeleteTrigger(ctx, id); err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not delete trigger"))
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not delete trigger").SetInternal(err)
 		}
 
 		return c.NoContent(http.StatusOK)

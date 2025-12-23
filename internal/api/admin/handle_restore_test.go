@@ -82,8 +82,11 @@ func TestHandleRestore_EmptyFilename(t *testing.T) {
 	// Execute
 	err := handleRestore(c)
 
-	// Assert - Echo handles validation errors, doesn't panic
-	assert.NoError(t, err)
+	// Assert - should return 400 for empty filename
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
 
 func TestHandleRestore_NonExistentFile(t *testing.T) {
@@ -100,8 +103,11 @@ func TestHandleRestore_NonExistentFile(t *testing.T) {
 	// Execute
 	err := handleRestore(c)
 
-	// Assert - Echo handles validation errors, doesn't panic
-	assert.NoError(t, err)
+	// Assert - should return 400 for non-existent file
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
 
 func TestHandleRestore_EmptyFile(t *testing.T) {
@@ -124,8 +130,11 @@ func TestHandleRestore_EmptyFile(t *testing.T) {
 	// Execute
 	err = handleRestore(c)
 
-	// Assert - Echo handles validation errors, doesn't panic
-	assert.NoError(t, err)
+	// Assert - should return 400 for empty file
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
 
 func TestHandleRestore_MalformedJSON(t *testing.T) {
@@ -148,8 +157,11 @@ func TestHandleRestore_MalformedJSON(t *testing.T) {
 	// Execute
 	err = handleRestore(c)
 
-	// Assert - Echo handles JSON errors, doesn't panic
-	assert.NoError(t, err)
+	// Assert - should return 500 for malformed JSON (restore failed)
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusInternalServerError, he.Code)
 }
 
 // CRITICAL BUG TEST: Test restoring a backup with expired TTL
@@ -343,8 +355,11 @@ func TestHandleRestore_InvalidJSON(t *testing.T) {
 	// Execute
 	err := handleRestore(c)
 
-	// Assert - Echo handles JSON parsing errors, doesn't panic
-	assert.NoError(t, err)
+	// Assert - should return 400 for invalid JSON
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
 
 func TestAdminRestoreRequest_Validate(t *testing.T) {

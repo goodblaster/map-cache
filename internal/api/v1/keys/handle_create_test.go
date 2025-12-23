@@ -58,9 +58,11 @@ func TestHandleCreate(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleCreate()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 
 	t.Run("with TTL", func(t *testing.T) {
@@ -104,8 +106,10 @@ func TestHandleCreate(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleCreate()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 }

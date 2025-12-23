@@ -45,10 +45,12 @@ func TestHandleCreateCache(t *testing.T) {
 
 		h := handleCreateCache()
 
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-			assert.Contains(t, rec.Body.String(), "cache name is required")
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Contains(t, he.Message, "validation failed")
 	})
 
 	t.Run("duplicate cache name", func(t *testing.T) {
@@ -75,8 +77,11 @@ func TestHandleCreateCache(t *testing.T) {
 		c = e.NewContext(req, rec)
 
 		h = handleCreateCache()
-		assert.NoError(t, h(c))
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Contains(t, rec.Body.String(), "failed to create cache")
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusInternalServerError, he.Code)
+		assert.Contains(t, he.Message, "failed to create cache")
 	})
 }

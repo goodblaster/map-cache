@@ -60,9 +60,11 @@ func TestHandleGetValue_NotFound(t *testing.T) {
 	err := handler(c)
 
 	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Contains(t, rec.Body.String(), "key not found")
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusNotFound, he.Code)
+	assert.Contains(t, he.Message, "key not found")
 }
 
 func TestHandleGetBatch_Success(t *testing.T) {
@@ -117,9 +119,11 @@ func TestHandleGetBatch_InvalidJSON(t *testing.T) {
 	err := handler(c)
 
 	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "invalid json payload")
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
+	assert.Contains(t, he.Message, "invalid json payload")
 }
 
 func TestHandleGetBatch_EmptyKeys(t *testing.T) {
@@ -139,9 +143,12 @@ func TestHandleGetBatch_EmptyKeys(t *testing.T) {
 	err := handler(c)
 
 	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "invalid request body")
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
+	assert.Equal(t, "validation failed", he.Message)
+	assert.Contains(t, he.Internal.Error(), "at least one key is required")
 }
 
 func TestHandleGetBatch_EmptyKeyInArray(t *testing.T) {
@@ -161,9 +168,12 @@ func TestHandleGetBatch_EmptyKeyInArray(t *testing.T) {
 	err := handler(c)
 
 	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "invalid request body")
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
+	assert.Equal(t, "validation failed", he.Message)
+	assert.Contains(t, he.Internal.Error(), "key cannot be empty")
 }
 
 func TestHandleGetBatch_KeyNotFound(t *testing.T) {
@@ -183,9 +193,11 @@ func TestHandleGetBatch_KeyNotFound(t *testing.T) {
 	err := handler(c)
 
 	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
-	assert.Contains(t, rec.Body.String(), "key not found")
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusNotFound, he.Code)
+	assert.Contains(t, he.Message, "key not found")
 }
 
 func TestGetBatchRequest_Validate_Valid(t *testing.T) {

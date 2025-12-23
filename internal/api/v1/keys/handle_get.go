@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -33,7 +32,7 @@ func handleGetValue() echo.HandlerFunc {
 
 		value, err := cache.Get(c.Request().Context(), key)
 		if err != nil {
-			return v1errors.ApiError(c, http.StatusNotFound, "key not found")
+			return echo.NewHTTPError(http.StatusNotFound, "key not found").SetInternal(err)
 		}
 
 		return c.JSON(http.StatusOK, value)
@@ -46,16 +45,16 @@ func handleGetBatch() echo.HandlerFunc {
 		cache := Cache(c)
 		var req getBatchRequest
 		if err := c.Bind(&req); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 		}
 
 		if err := req.Validate(); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
+			return echo.NewHTTPError(http.StatusBadRequest, "validation failed").SetInternal(err)
 		}
 
 		value, err := cache.BatchGet(c.Request().Context(), req.Keys...)
 		if err != nil {
-			return v1errors.ApiError(c, http.StatusNotFound, "key not found")
+			return echo.NewHTTPError(http.StatusNotFound, "key not found").SetInternal(err)
 		}
 
 		return c.JSON(http.StatusOK, value)

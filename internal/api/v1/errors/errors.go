@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/goodblaster/errors"
-	"github.com/goodblaster/map-cache/internal/log"
-	"github.com/labstack/echo/v4"
 )
 
 // Error - in an error stack, this is the error that will be returned to the user.
@@ -35,24 +33,6 @@ func WebError(err error) error {
 	msg := strings.Split(err.Error(), "\n")[0]
 
 	return &Error{Msg: msg}
-}
-
-// ApiError - Log error and returns a JSON response to the client.
-func ApiError(c echo.Context, code int, errmsg any) error {
-	err, _ := errmsg.(error)
-	resp := NewErrorResponse(code, errmsg)
-	// Use request-scoped logger from context to include request_id
-	logger := log.FromContext(c.Request().Context()).With("request", c.Request().RequestURI).With("status", code)
-
-	if err != nil {
-		resp.Internal = err
-		resp.Message = WebError(err).Error()
-		logger.WithError(err).Error(errmsg)
-		return c.JSON(code, resp)
-	}
-
-	logger.Error(errmsg)
-	return c.JSON(code, resp)
 }
 
 // ErrorResponse represents a standard error response.

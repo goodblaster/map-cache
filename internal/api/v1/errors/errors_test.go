@@ -43,33 +43,6 @@ func TestWebError_MultilineError(t *testing.T) {
 	assert.Equal(t, "first line", result.Error())
 }
 
-func TestApiError_WithErrorType(t *testing.T) {
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	testErr := fmt.Errorf("database connection failed")
-	err := ApiError(c, http.StatusInternalServerError, testErr)
-
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	assert.Contains(t, rec.Body.String(), "database connection failed")
-}
-
-func TestApiError_WithStringMessage(t *testing.T) {
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/test", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := ApiError(c, http.StatusBadRequest, "invalid input")
-
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-	assert.Contains(t, rec.Body.String(), "invalid input")
-}
-
 func TestNewErrorResponse_WithMessage(t *testing.T) {
 	resp := NewErrorResponse(http.StatusNotFound, "resource not found")
 	assert.Equal(t, http.StatusNotFound, resp.Code)
@@ -157,4 +130,29 @@ func TestErrorResponse_Unwrap_Nil(t *testing.T) {
 
 	unwrapped := resp.Unwrap()
 	assert.Nil(t, unwrapped)
+}
+
+// Tests demonstrating standard Echo error patterns
+
+func TestEchoHTTPError_SimpleMessage(t *testing.T) {
+	he := echo.NewHTTPError(http.StatusBadRequest, "invalid input")
+	assert.Equal(t, http.StatusBadRequest, he.Code)
+	assert.Equal(t, "invalid input", he.Message)
+}
+
+func TestEchoHTTPError_WithInternal(t *testing.T) {
+	internalErr := fmt.Errorf("database connection failed")
+	he := echo.NewHTTPError(http.StatusInternalServerError, "failed to process request").SetInternal(internalErr)
+	assert.Equal(t, http.StatusInternalServerError, he.Code)
+	assert.Equal(t, "failed to process request", he.Message)
+	assert.Equal(t, internalErr, he.Internal)
+}
+
+func TestEchoHTTPError_WithWrappedError(t *testing.T) {
+	// Simulate validation error that may be wrapped
+	validationErr := &Error{Msg: "input is required"}
+	he := echo.NewHTTPError(http.StatusBadRequest, validationErr)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
+	// Error handler will extract user-friendly message from this
+	assert.Equal(t, validationErr, he.Message)
 }

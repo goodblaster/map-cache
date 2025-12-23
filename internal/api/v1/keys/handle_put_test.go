@@ -93,9 +93,11 @@ func TestHandlePut(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handlePut()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 }
 
@@ -158,9 +160,11 @@ func TestHandleReplaceBatch(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleReplaceBatch()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 
 	t.Run("invalid JSON", func(t *testing.T) {
@@ -172,9 +176,11 @@ func TestHandleReplaceBatch(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleReplaceBatch()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 
 	t.Run("with TTL", func(t *testing.T) {

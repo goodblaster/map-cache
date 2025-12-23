@@ -125,9 +125,11 @@ func TestHandleBackup_NonExistentCache(t *testing.T) {
 	// Execute
 	err := handleBackup(c)
 
-	// Assert - Echo handles error internally, returns nil to avoid panic
-	// Check that it doesn't panic and completes
-	assert.NoError(t, err)
+	// Assert - should return 500 for non-existent cache (backup failed)
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusInternalServerError, he.Code)
 }
 
 func TestHandleBackup_EmptyFilename(t *testing.T) {
@@ -144,8 +146,11 @@ func TestHandleBackup_EmptyFilename(t *testing.T) {
 	// Execute
 	err := handleBackup(c)
 
-	// Assert - Echo handles validation errors, doesn't panic
-	assert.NoError(t, err)
+	// Assert - should return 400 for empty filename
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
 
 func TestHandleBackup_InvalidJSON(t *testing.T) {
@@ -161,8 +166,11 @@ func TestHandleBackup_InvalidJSON(t *testing.T) {
 	// Execute
 	err := handleBackup(c)
 
-	// Assert - Echo handles JSON parsing errors, doesn't panic
-	assert.NoError(t, err)
+	// Assert - should return 400 for invalid JSON
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
 
 func TestAdminBackupRequest_Validate(t *testing.T) {

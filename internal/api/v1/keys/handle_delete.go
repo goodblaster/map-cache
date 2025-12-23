@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -35,7 +34,7 @@ func handleDelete() echo.HandlerFunc {
 		key := c.Param("key")
 
 		if err := cache.Delete(c.Request().Context(), key); err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not delete key"))
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not delete key").SetInternal(err)
 		}
 
 		return c.NoContent(http.StatusOK)
@@ -48,15 +47,15 @@ func handleDeleteBatch() echo.HandlerFunc {
 		cache := Cache(c)
 		var req deleteBatchRequest
 		if err := c.Bind(&req); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 		}
 
 		if err := req.Validate(); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
+			return echo.NewHTTPError(http.StatusBadRequest, "validation failed").SetInternal(err)
 		}
 
 		if err := cache.Delete(c.Request().Context(), req.Keys...); err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not delete keys"))
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not delete keys").SetInternal(err)
 		}
 
 		return c.NoContent(http.StatusOK)

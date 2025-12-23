@@ -51,9 +51,11 @@ func TestHandleDeleteCache_NotFound(t *testing.T) {
 	handler := handleDeleteCache()
 	err := handler(c)
 
-	// Assert - ApiError returns nil but sets HTTP status in response
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusNotFound, rec.Code)
+	// Assert - should return 404 for non-existent cache
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusNotFound, he.Code)
 }
 
 func TestHandleDeleteCache_MissingName(t *testing.T) {
@@ -70,6 +72,8 @@ func TestHandleDeleteCache_MissingName(t *testing.T) {
 	err := handler(c)
 
 	// Assert - should return bad request
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }

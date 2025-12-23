@@ -110,13 +110,16 @@ func TestCacheMW_CacheNotFound(t *testing.T) {
 
 	// Execute
 	mw := cacheMW(handler)
-	_ = mw(ctx)
+	err := mw(ctx)
 
 	// Assert - handler should not be called
 	assert.False(t, handlerCalled)
 
-	// Check that HTTP response has correct error status
-	assert.Equal(t, http.StatusFailedDependency, rec.Code)
+	// Check that error was returned with correct status
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusFailedDependency, he.Code)
 }
 
 func TestCacheMW_AcquireAndRelease(t *testing.T) {

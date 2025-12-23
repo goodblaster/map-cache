@@ -3,8 +3,6 @@ package triggers
 import (
 	"net/http"
 
-	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
@@ -22,13 +20,13 @@ func handleCreateTrigger() echo.HandlerFunc {
 
 		var input CreateTriggerRequest
 		if err := c.Bind(&input); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid JSON payload"))
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid JSON payload").SetInternal(err)
 		}
 
 		cache := Cache(c)
 		id, err := cache.CreateTrigger(ctx, input.Key, input.Raw.Command)
 		if err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "failed to add trigger"))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to add trigger").SetInternal(err)
 		}
 
 		return c.JSON(http.StatusOK, id)

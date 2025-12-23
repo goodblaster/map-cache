@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
@@ -40,16 +39,16 @@ func handleBackup(c echo.Context) error {
 	ctx := c.Request().Context()
 	var input adminBackupRequest
 	if err := c.Bind(&input); err != nil {
-		return v1errors.ApiError(c, http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 	}
 
 	if err := input.Validate(); err != nil {
-		return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "input failed validation"))
+		return echo.NewHTTPError(http.StatusBadRequest, "validation failed").SetInternal(err)
 	}
 
 	err := caches.Backup(ctx, input.CacheName, input.Filename)
 	if err != nil {
-		return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "backup failed"))
+		return echo.NewHTTPError(http.StatusInternalServerError, "backup failed").SetInternal(err)
 	}
 
 	return c.NoContent(http.StatusOK)

@@ -1,6 +1,8 @@
 package api
 
 import (
+	"strings"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel/attribute"
@@ -28,7 +30,9 @@ func RequestIDMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		// Generate new UUID if not provided
 		if requestID == "" {
-			requestID = uuid.New().String()
+			// Use first 12 chars of UUID (without hyphens) for shorter, readable request IDs
+			// This gives 16^12 (~281 trillion) possible values - more than enough uniqueness
+			requestID = strings.ReplaceAll(uuid.New().String(), "-", "")[:12]
 		}
 
 		// Store in Echo context for use by handlers and other middleware

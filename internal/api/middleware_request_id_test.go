@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,9 +28,9 @@ func TestRequestIDMiddleware_GeneratesUUID(t *testing.T) {
 	// Verify request ID was generated
 	assert.NotEmpty(t, capturedRequestID, "Request ID should be generated")
 
-	// Verify it's a valid UUID
-	_, err := uuid.Parse(capturedRequestID)
-	assert.NoError(t, err, "Generated request ID should be a valid UUID")
+	// Verify it's 12 hex characters (shortened UUID)
+	assert.Equal(t, 12, len(capturedRequestID), "Request ID should be 12 characters")
+	assert.Regexp(t, "^[0-9a-f]{12}$", capturedRequestID, "Request ID should be 12 hex characters")
 
 	// Verify response header contains the request ID
 	responseHeader := rec.Header().Get(RequestIDHeader)

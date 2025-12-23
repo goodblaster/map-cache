@@ -67,13 +67,16 @@ func main() {
 
 	e := echo.New()
 
+	// Custom error handler - centralized error logging and response formatting
+	e.HTTPErrorHandler = api.CustomErrorHandler
+
+	e.Use(middleware.Recover())
+
 	// Request ID middleware - MUST be first to ensure all logs/traces have correlation IDs
 	e.Use(api.RequestIDMiddleware)
 
 	// Logging middleware - placed after RequestIDMiddleware to include request IDs in logs
 	e.Use(api.LoggingMiddleware)
-
-	e.Use(middleware.Recover())
 
 	// Only add telemetry middleware if enabled
 	if config.TelemetryEnabled && config.TelemetryExporter != "none" {
@@ -116,10 +119,10 @@ func main() {
 		cacheList := caches.List()
 
 		return c.JSON(http.StatusOK, map[string]any{
-			"status":    "healthy",
-			"timestamp": time.Now().UTC(),
+			"status":         "healthy",
+			"timestamp":      time.Now().UTC(),
 			"uptime_seconds": int64(uptime.Seconds()),
-			"build":     build.Info(),
+			"build":          build.Info(),
 			"system": map[string]any{
 				"goroutines":      runtime.NumGoroutine(),
 				"memory_alloc_mb": memStats.Alloc / 1024 / 1024,

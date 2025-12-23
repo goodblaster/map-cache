@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
@@ -134,15 +133,15 @@ func handlePatch() echo.HandlerFunc {
 
 		var input handlePatchRequest
 		if err := c.Bind(&input); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 		}
 
 		if err := input.Validate(); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
+			return echo.NewHTTPError(http.StatusBadRequest, "validation failed").SetInternal(err)
 		}
 
 		if err := input.ValidateOperations(ctx, cache); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid operation(s)"))
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid operation(s)").SetInternal(err)
 		}
 
 		var results PatchResponse
@@ -212,7 +211,7 @@ func handlePatch() echo.HandlerFunc {
 			results.Results = append(results.Results, result)
 			if result.Error != nil {
 				// If any operation fails, we return the error immediately
-				return v1errors.ApiError(c, http.StatusInternalServerError, results)
+				return echo.NewHTTPError(http.StatusInternalServerError, "operation failed").SetInternal(result.Error)
 			}
 		}
 

@@ -121,9 +121,11 @@ func TestHandleDeleteBatch(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleDeleteBatch()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 
 	t.Run("empty key in array", func(t *testing.T) {
@@ -139,8 +141,10 @@ func TestHandleDeleteBatch(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleDeleteBatch()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 }

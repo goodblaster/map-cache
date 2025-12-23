@@ -78,9 +78,11 @@ func TestHandleCreateTrigger(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleCreateTrigger()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 }
 
@@ -189,8 +191,10 @@ func TestHandleReplaceTrigger(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleReplaceTrigger()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
 	})
 }

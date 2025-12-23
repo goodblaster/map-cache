@@ -7,7 +7,6 @@ import (
 
 	"github.com/goodblaster/errors"
 	"github.com/goodblaster/map-cache/internal/config"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
@@ -27,11 +26,12 @@ func handleCommand() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var input commandRequest
 		if err := c.Bind(&input); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 		}
 
 		if err := input.Validate(); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, err)
+			// User-friendly message with full error preserved for logging
+			return echo.NewHTTPError(http.StatusBadRequest, "validation failed").SetInternal(err)
 		}
 
 		var cmds []caches.Command
@@ -48,11 +48,12 @@ func handleCommand() echo.HandlerFunc {
 
 		// Check if execution timed out
 		if ctx.Err() == context.DeadlineExceeded {
-			return v1errors.ApiError(c, http.StatusRequestTimeout, "command execution timed out")
+			return echo.NewHTTPError(http.StatusRequestTimeout, "command execution timed out")
 		}
 
 		if result.Error != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, result.Error)
+			// Generic message to user, full error preserved for logging
+			return echo.NewHTTPError(http.StatusInternalServerError, "command execution failed").SetInternal(result.Error)
 		}
 
 		return c.JSON(http.StatusOK, result.Value)

@@ -86,8 +86,10 @@ func TestHandleUpdateCache_InvalidJSON(t *testing.T) {
 	err := handler(c)
 
 	// Assert - should return bad request
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
 
 func TestHandleUpdateCache_MissingCacheName(t *testing.T) {
@@ -106,8 +108,10 @@ func TestHandleUpdateCache_MissingCacheName(t *testing.T) {
 	err := handler(c)
 
 	// Assert
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
 
 func TestHandleUpdateCache_DefaultCache(t *testing.T) {
@@ -128,6 +132,8 @@ func TestHandleUpdateCache_DefaultCache(t *testing.T) {
 	err := handler(c)
 
 	// Assert - should return bad request (cannot modify default cache)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Error(t, err)
+	he, ok := err.(*echo.HTTPError)
+	assert.True(t, ok)
+	assert.Equal(t, http.StatusBadRequest, he.Code)
 }

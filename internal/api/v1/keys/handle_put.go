@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/internal/log"
 	"github.com/labstack/echo/v4"
 )
@@ -27,15 +26,15 @@ func handlePut() echo.HandlerFunc {
 
 		var req handlePutRequest
 		if err := c.Bind(&req); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 		}
 
 		if err := req.Validate(); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
+			return echo.NewHTTPError(http.StatusBadRequest, "validation failed").SetInternal(err)
 		}
 
 		if err := cache.Replace(c.Request().Context(), key, req.Value); err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not replace contents"))
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not replace contents").SetInternal(err)
 		}
 
 		return c.NoContent(http.StatusOK)
@@ -64,15 +63,15 @@ func handleReplaceBatch() echo.HandlerFunc {
 		cache := Cache(c)
 		var req replaceBatchRequest
 		if err := c.Bind(&req); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 		}
 
 		if err := req.Validate(); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid request body"))
+			return echo.NewHTTPError(http.StatusBadRequest, "validation failed").SetInternal(err)
 		}
 
 		if err := cache.ReplaceBatch(c.Request().Context(), req.Entries); err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "could not replace contents"))
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not replace contents").SetInternal(err)
 		}
 
 		// TTLs

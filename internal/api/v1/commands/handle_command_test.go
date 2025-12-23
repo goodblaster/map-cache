@@ -119,10 +119,13 @@ func TestHandleCommand(t *testing.T) {
 		c.Set("cache", cache)
 
 		h := handleCommand()
-		if assert.NoError(t, h(c)) {
-			assert.Equal(t, http.StatusBadRequest, rec.Code)
-			assert.Contains(t, rec.Body.String(), "at least one command is required")
-		}
+		err := h(c)
+		assert.Error(t, err)
+		he, ok := err.(*echo.HTTPError)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusBadRequest, he.Code)
+		assert.Equal(t, "validation failed", he.Message)
+		assert.Contains(t, he.Internal.Error(), "at least one command is required")
 	})
 
 	t.Run("execute command sequence", func(t *testing.T) {

@@ -4,9 +4,8 @@ import (
 	"net/http"
 
 	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
-	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/goodblaster/map-cache/internal/log"
+	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
 
@@ -29,16 +28,16 @@ func handleCreateCache() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req createCacheRequest
 		if err := c.Bind(&req); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 		}
 
 		if err := req.Validate(); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, err)
+			return echo.NewHTTPError(http.StatusBadRequest, "validation failed").SetInternal(err)
 		}
 
 		err := caches.AddCache(req.Name)
 		if err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, "failed to create cache")
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create cache").SetInternal(err)
 		}
 
 		// Expiration

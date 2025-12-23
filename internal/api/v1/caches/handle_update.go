@@ -3,7 +3,6 @@ package caches
 import (
 	"net/http"
 
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
@@ -18,24 +17,24 @@ func handleUpdateCache() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var input updateCacheRequest
 		if err := c.Bind(&input); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, "invalid json payload")
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid json payload").SetInternal(err)
 		}
 
 		cacheName := c.Param("name")
 		if cacheName == "" {
-			return v1errors.ApiError(c, http.StatusBadRequest, "cache name is required")
+			return echo.NewHTTPError(http.StatusBadRequest, "cache name is required")
 		}
 
 		// Cannot modify the default cache
 		if cacheName == caches.DefaultName {
-			return v1errors.ApiError(c, http.StatusBadRequest, "cannot modify the default cache")
+			return echo.NewHTTPError(http.StatusBadRequest, "cannot modify the default cache")
 		}
 
 		if input.TTL != nil {
 			// Update the cache expiration
 			err := caches.SetCacheTTL(cacheName, *input.TTL)
 			if err != nil {
-				return v1errors.ApiError(c, http.StatusInternalServerError, "failed to update cache")
+				return echo.NewHTTPError(http.StatusInternalServerError, "failed to update cache").SetInternal(err)
 			}
 
 			return c.NoContent(http.StatusNoContent)
@@ -44,7 +43,7 @@ func handleUpdateCache() echo.HandlerFunc {
 		// If the TTL is nil, we interpret it as a request to remove the TTL
 		err := caches.CancelCacheExpiration(cacheName)
 		if err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, "could not remove cache expiration")
+			return echo.NewHTTPError(http.StatusInternalServerError, "could not remove cache expiration").SetInternal(err)
 		}
 
 		return c.NoContent(http.StatusNoContent)

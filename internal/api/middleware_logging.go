@@ -48,7 +48,7 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			With("status", status).
 			With("duration_ms", duration.Milliseconds()).
 			With("remote_ip", c.RealIP()).
-			Info("HTTP request completed")
+			Infof("%d %s %s", status, req.Method, req.URL.Path)
 
 		return err
 	}

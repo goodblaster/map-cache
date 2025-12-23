@@ -3,8 +3,6 @@ package triggers
 import (
 	"net/http"
 
-	"github.com/goodblaster/errors"
-	v1errors "github.com/goodblaster/map-cache/internal/api/v1/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
@@ -22,16 +20,16 @@ func handleReplaceTrigger() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		id := c.Param("id")
 		if id == "" {
-			return v1errors.ApiError(c, http.StatusBadRequest, "missing trigger id")
+			return echo.NewHTTPError(http.StatusBadRequest, "missing trigger id")
 		}
 
 		var input replaceTriggerRequest
 		if err := c.Bind(&input); err != nil {
-			return v1errors.ApiError(c, http.StatusBadRequest, errors.Wrap(err, "invalid JSON payload"))
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid JSON payload").SetInternal(err)
 		}
 
 		if input.Id != id {
-			return v1errors.ApiError(c, http.StatusBadRequest, "payload id must match request id")
+			return echo.NewHTTPError(http.StatusBadRequest, "payload id must match request id")
 		}
 
 		newTrigger := caches.Trigger{
@@ -42,7 +40,7 @@ func handleReplaceTrigger() echo.HandlerFunc {
 
 		cache := Cache(c)
 		if err := cache.ReplaceTrigger(ctx, id, newTrigger); err != nil {
-			return v1errors.ApiError(c, http.StatusInternalServerError, errors.Wrap(err, "failed to replace trigger"))
+			return echo.NewHTTPError(http.StatusInternalServerError, "failed to replace trigger").SetInternal(err)
 		}
 
 		return c.NoContent(http.StatusNoContent)
