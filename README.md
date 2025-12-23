@@ -1240,6 +1240,58 @@ Import metrics into Grafana to visualize:
 - Cache sizes and key counts
 - Long-running operation trends
 
+### Performance Profiling (pprof)
+
+Map-cache exposes Go's standard pprof endpoints for runtime profiling and debugging:
+
+**Available Endpoints:**
+- `/debug/pprof/heap` - Heap memory allocation profile
+- `/debug/pprof/goroutine` - Stack traces of all current goroutines
+- `/debug/pprof/threadcreate` - Stack traces that led to thread creation
+- `/debug/pprof/block` - Stack traces that led to blocking on synchronization primitives
+- `/debug/pprof/mutex` - Stack traces of mutex contention
+- `/debug/pprof/allocs` - All past memory allocations (sampling)
+- `/debug/pprof/profile` - CPU profile (30-second duration by default)
+- `/debug/pprof/trace` - Execution trace (duration specified via `?seconds=N`)
+- `/debug/pprof/cmdline` - Command line arguments
+- `/debug/pprof/symbol` - Symbol lookup
+
+**Common Usage:**
+
+```bash
+# CPU profiling (30 seconds)
+curl http://localhost:8080/debug/pprof/profile > cpu.prof
+go tool pprof cpu.prof
+
+# Heap memory snapshot
+curl http://localhost:8080/debug/pprof/heap > heap.prof
+go tool pprof heap.prof
+
+# Interactive CPU profiling with web visualization
+go tool pprof -http=:8081 http://localhost:8080/debug/pprof/profile
+
+# Goroutine analysis (text format)
+curl "http://localhost:8080/debug/pprof/goroutine?debug=1"
+
+# Trace analysis
+curl "http://localhost:8080/debug/pprof/trace?seconds=5" > trace.out
+go tool trace trace.out
+
+# Block profiling (enable first)
+curl "http://localhost:8080/debug/pprof/block?debug=1"
+
+# Mutex contention profiling
+curl "http://localhost:8080/debug/pprof/mutex?debug=1"
+```
+
+**Production Profiling Tips:**
+- CPU profiling has minimal overhead (~5%)
+- Use `?seconds=N` to control trace/profile duration
+- Heap profiles are snapshots and safe to collect anytime
+- Add `?debug=1` for human-readable text output
+- Use `go tool pprof -http` for interactive web-based analysis
+- Profiles can be compared to detect regressions: `go tool pprof -base old.prof new.prof`
+
 ---
 
 ## 🔗 Related Resources
@@ -1248,4 +1300,5 @@ Import metrics into Grafana to visualize:
 - **OpenAPI Spec**: Available at `/api/v1/docs/openapi.yaml`
 - **Health Check**: `GET /healthz`
 - **Prometheus Metrics**: `GET /metrics`
+- **Performance Profiling**: `GET /debug/pprof/*` (heap, goroutine, cpu, etc.)
 - **GitHub**: https://github.com/goodblaster/map-cache
