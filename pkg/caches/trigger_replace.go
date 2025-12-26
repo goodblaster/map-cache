@@ -2,8 +2,6 @@ package caches
 
 import (
 	"context"
-
-	"github.com/goodblaster/errors"
 )
 
 func (cache *Cache) ReplaceTrigger(ctx context.Context, id string, newTrigger Trigger) error {
@@ -16,5 +14,5 @@ func (cache *Cache) ReplaceTrigger(ctx context.Context, id string, newTrigger Tr
 			}
 		}
 	}
-	return errors.New("trigger not found")
+	return ErrTriggerNotFound
 }

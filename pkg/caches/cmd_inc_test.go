@@ -22,7 +22,7 @@ func TestINC(t *testing.T) {
 
 	res := INC("num", 1).Do(ctx, cache)
 	assert.NoError(t, res.Error)
-	assert.Nil(t, res.Value)
+	assert.Equal(t, float64(2), res.Value)
 
 	assert.EqualValues(t, 2, cache.cmap.Data(ctx)["num"])
 }

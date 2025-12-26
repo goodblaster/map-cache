@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/goodblaster/logos"
 	"github.com/google/uuid"
 )
 
@@ -41,7 +40,7 @@ func TestStress(t *testing.T) {
 				cacheID := "cache-" + strconv.Itoa(int(randInt(0, numCaches)))
 				cache, err := FetchCache(cacheID)
 				if err != nil {
-					logos.Errorf("fetch cache %s error: %v", cacheID, err)
+					t.Errorf("fetch cache %s error: %v", cacheID, err)
 					continue
 				}
 
@@ -79,7 +78,7 @@ func TestStress(t *testing.T) {
 		}(i)
 	}
 	wg.Wait()
-	logos.Infof("done - %v", time.Since(start))
+	t.Logf("done - %v", time.Since(start))
 }
 
 func randInt(min, max int) int64 {

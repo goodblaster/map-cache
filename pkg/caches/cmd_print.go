@@ -3,9 +3,8 @@ package caches
 import (
 	"context"
 	"fmt"
-	"regexp"
 
-	"github.com/goodblaster/logos"
+	"github.com/goodblaster/map-cache/internal/log"
 )
 
 type CommandPrint struct {
@@ -36,20 +35,20 @@ func (p CommandPrint) Do(ctx context.Context, cache *Cache) CmdResult {
 		}
 
 		formatted := fmt.Sprintf(msg, params...)
-		logos.Print(formatted)
+		log.Print(formatted)
 		resValues = append(resValues, formatted)
 	}
 	res.Value = resValues
 	return res
 }
 
-// ExtractAndReplaceParams - Handle ${{var}}
+// ExtractAndReplaceParams - Handle ${{var}} using shared regex
 func ExtractAndReplaceParams(input string) (string, []string) {
 	var params []string
 
-	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	result := re.ReplaceAllStringFunc(input, func(m string) string {
-		submatch := re.FindStringSubmatch(m)
+	// Use shared pre-compiled regex
+	result := InterpolationPattern.ReplaceAllStringFunc(input, func(m string) string {
+		submatch := InterpolationPattern.FindStringSubmatch(m)
 		if len(submatch) > 1 {
 			params = append(params, submatch[1])
 		}

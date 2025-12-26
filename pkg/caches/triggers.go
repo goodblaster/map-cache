@@ -7,6 +7,26 @@ import (
 	"github.com/goodblaster/errors"
 )
 
+// Trigger recursion limits
+const (
+	// MaxTriggerDepth is the maximum number of nested trigger executions allowed.
+	// This prevents infinite loops where trigger A fires trigger B which fires A again.
+	MaxTriggerDepth = 10
+)
+
+// Context key types for type-safe context value access
+type triggerDepthKey struct{}
+type triggerVarsKey struct{}
+type triggerOldValueKey struct{}
+type triggerNewValueKey struct{}
+
+var (
+	triggerDepthContextKey    = triggerDepthKey{}
+	triggerVarsContextKey     = triggerVarsKey{}
+	triggerOldValueContextKey = triggerOldValueKey{}
+	triggerNewValueContextKey = triggerNewValueKey{}
+)
+
 // Trigger - A trigger is a command that is executed when a specified key is modified.
 // For now, this command is only called on-change. Future versions may support
 // additional commands like on-delete.
@@ -18,10 +38,20 @@ type Trigger struct {
 
 // OnChange gets called whenever there was a successful data replacement.
 // All trigger keys are checked, and for each match, the trigger command is called.
-// Initially, this will be immediately recursive. Future versions may complete a full
-// command sequence before delayed recursion. Future version should also seek to
-// prevent infinite recursion.
+//
+// INFINITE LOOP PROTECTION:
+// Triggers can recursively fire other triggers. To prevent infinite loops,
+// we track the recursion depth and limit it to MaxTriggerDepth (10 levels).
+// If the depth limit is exceeded, an error is returned.
 func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newValue any) error {
+	// Check current trigger depth
+	depth := getTriggerDepth(ctx)
+	if depth > MaxTriggerDepth {
+		return ErrTriggerRecursionLimit.Format(MaxTriggerDepth)
+	}
+
+	// Increment depth for nested trigger executions
+	ctx = context.WithValue(ctx, triggerDepthContextKey, depth+1)
 	for triggerKey, triggers := range cache.triggers {
 		matchingKeys := cache.KeysMatch(ctx, triggerKey, key)
 
@@ -33,9 +63,9 @@ func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newV
 			}
 
 			for _, trigger := range triggers {
-				cmdCtx := context.WithValue(ctx, "vars", vars)
-				cmdCtx = context.WithValue(cmdCtx, "oldValue", oldValue)
-				cmdCtx = context.WithValue(cmdCtx, "newValue", newValue)
+				cmdCtx := context.WithValue(ctx, triggerVarsContextKey, vars)
+				cmdCtx = context.WithValue(cmdCtx, triggerOldValueContextKey, oldValue)
+				cmdCtx = context.WithValue(cmdCtx, triggerNewValueContextKey, newValue)
 				if res := trigger.Command.Do(cmdCtx, cache); res.Error != nil {
 					return errors.Wrap(res.Error, "trigger failed")
 				}
@@ -75,19 +105,28 @@ func ExtractWildcardMatches(key, triggerKey string) ([]string, error) {
 	triggerParts := strings.Split(triggerKey, "/")
 
 	if len(keyParts) != len(triggerParts) {
-		return nil, errors.Newf("mismatched path lengths: %v vs %v", keyParts, triggerParts)
+		return nil, ErrMismatchedPathLengths.Format(keyParts, triggerParts)
 	}
 
 	var matches []string
 	for i := range keyParts {
 		if triggerParts[i] == "*" {
 			if keyParts[i] == "" {
-				return nil, errors.Newf("wildcard at index %d matched empty segment", i)
+				return nil, ErrWildcardEmptySegment.Format(i)
 			}
 			matches = append(matches, keyParts[i])
 		} else if triggerParts[i] != keyParts[i] {
-			return nil, errors.Newf("segment mismatch at index %d: %s != %s", i, triggerParts[i], keyParts[i])
+			return nil, ErrSegmentMismatch.Format(i, triggerParts[i], keyParts[i])
 		}
 	}
 	return matches, nil
+}
+
+// getTriggerDepth retrieves the current trigger recursion depth from context.
+// Returns 0 if not set (first trigger execution).
+func getTriggerDepth(ctx context.Context) int {
+	if depth, ok := ctx.Value(triggerDepthContextKey).(int); ok {
+		return depth
+	}
+	return 0
 }

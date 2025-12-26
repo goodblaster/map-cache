@@ -10,13 +10,19 @@ import (
 	"github.com/Jeffail/gabs/v2"
 )
 
+// GabsMap wraps a Gabs container for JSON-like nested data structures.
+// INVARIANT: The root container is always a map[string]any, never an array or scalar.
+// This invariant is established by gabs.New() which creates a JSON object,
+// and must be maintained by all Set operations.
 type GabsMap struct {
 	container *gabs.Container
 }
 
+// NewGabsMap creates a new GabsMap with an empty JSON object as the root.
+// The root is guaranteed to be map[string]any.
 func NewGabsMap() *GabsMap {
 	return &GabsMap{
-		container: gabs.New(),
+		container: gabs.New(), // Creates JSON object: map[string]any
 	}
 }
 
@@ -89,6 +95,10 @@ func (gMap *GabsMap) Set(ctx context.Context, value any, path ...string) error {
 	return err
 }
 
+// Data returns the underlying map data.
+// SAFETY: This type assertion is safe because NewGabsMap() ensures the root
+// is always a map[string]any (created by gabs.New()). The container is never
+// replaced with a non-map value - only nested values within it are modified.
 func (gMap *GabsMap) Data(ctx context.Context) map[string]any {
 	return gMap.container.Data().(map[string]any)
 }
@@ -120,7 +130,8 @@ func (gMap *GabsMap) WildKeys(ctx context.Context, path string) []string {
 			case []interface{}:
 				for i := range data {
 					child := node.Index(i)
-					walk(child, idx+1, append(currentPath, fmt.Sprintf("%d", i)))
+					// Use strconv.Itoa instead of fmt.Sprintf for better performance
+					walk(child, idx+1, append(currentPath, strconv.Itoa(i)))
 				}
 			}
 		} else {

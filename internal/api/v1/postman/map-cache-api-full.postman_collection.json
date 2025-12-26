@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "2583cd0d-a032-49d0-937b-969c8a2cdec5",
-		"name": "map-cache-api",
-		"description": "API Collection for Map Cache",
+		"name": "map-cache API - Full Reference",
+		"description": "Complete API reference for map-cache. Covers all CRUD operations for Caches, Keys, Triggers, and Commands. For comprehensive examples and use cases, see the 'map-cache - Comprehensive Examples' collection.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "39796492"
 	},
@@ -613,6 +613,114 @@
 							]
 						},
 						"description": "Replace an existing trigger"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Commands",
+			"item": [
+				{
+					"name": "Execute Commands",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Cache-Name",
+								"value": "my-cache"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"commands\": [\n    {\n      \"type\": \"INC\",\n      \"key\": \"counter\",\n      \"value\": 1\n    },\n    {\n      \"type\": \"RETURN\",\n      \"key\": \"${{counter}}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/commands/execute",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"commands",
+								"execute"
+							]
+						},
+						"description": "Execute a sequence of commands atomically. See 'map-cache - Comprehensive Examples' collection for detailed command examples."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Backup Cache",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Cache-Name",
+								"value": "my-cache"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8080/api/admin/backup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"admin",
+								"backup"
+							]
+						},
+						"description": "Export entire cache as JSON"
+					},
+					"response": []
+				},
+				{
+					"name": "Restore Cache",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Cache-Name",
+								"value": "my-cache"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"key1\": \"value1\",\n  \"key2\": 42\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/admin/restore",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"admin",
+								"restore"
+							]
+						},
+						"description": "Restore cache from JSON backup"
 					},
 					"response": []
 				}

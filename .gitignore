@@ -1,0 +1,96 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Built binary
+map-cache
+
+# Profiling files
+*.prof
+cpu.prof
+mem.prof
+
+# Backup files
+*-backup.json
+default-backup.json
+
+# Development notes
+notes
+notes - *
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Vendor
+vendor/
+
+# Test coverage files
+*.coverprofile
+coverage.txt
+coverage.html
+
+# Benchmark output
+*.bench
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary and log files
+*.tmp
+*.log
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Additional backup patterns
+*.bak
+*.backup
+
+# IMPORTANT: pkg/ directory contains source code and SHOULD be committed.
+# It is intentionally NOT ignored in this file.

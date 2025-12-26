@@ -23,16 +23,28 @@ func FOR(loopExpr string, cmds ...Command) Command {
 }
 
 func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
-	// Extract pattern like ${{job-1234/domains/*/countdown}}
-	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	match := re.FindStringSubmatch(f.LoopExpr)
+	// Extract pattern like ${{job-1234/domains/*/countdown}} using shared regex
+	match := InterpolationPattern.FindStringSubmatch(f.LoopExpr)
 	if len(match) < 2 {
-		return CmdResult{Error: fmt.Errorf("invalid FOR expression: %s", f.LoopExpr)}
+		return CmdResult{Error: ErrInvalidForExpression.Format(f.LoopExpr)}
 	}
 
-	keyPattern := strings.TrimSpace(match[1])
-	if !strings.Contains(keyPattern, "*") {
-		return CmdResult{Error: fmt.Errorf("FOR expression must include a wildcard: %s", keyPattern)}
+	keyPattern := match[1]
+	// TrimSpace only if needed
+	if len(keyPattern) > 0 && (keyPattern[0] == ' ' || keyPattern[len(keyPattern)-1] == ' ' || keyPattern[0] == '\t') {
+		keyPattern = strings.TrimSpace(keyPattern)
+	}
+
+	// Check for wildcard (avoid strings.Contains)
+	hasWildcard := false
+	for i := 0; i < len(keyPattern); i++ {
+		if keyPattern[i] == '*' {
+			hasWildcard = true
+			break
+		}
+	}
+	if !hasWildcard {
+		return CmdResult{Error: ErrForExpressionNeedsWildcard.Format(keyPattern)}
 	}
 
 	// Build a regex from the wildcard pattern
@@ -48,6 +60,11 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 	var allResults []CmdResult
 
 	for _, key := range keys {
+		// Check for context cancellation
+		if err := ctx.Err(); err != nil {
+			return CmdResult{Error: err}
+		}
+
 		submatches := keyRegex.FindStringSubmatch(key)
 		if len(submatches) != starCount+1 {
 			// No match or incorrect group count
@@ -55,6 +72,11 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 		}
 
 		for _, cmd := range f.Commands {
+			// Check for context cancellation
+			if err := ctx.Err(); err != nil {
+				return CmdResult{Error: err}
+			}
+
 			// Replace ${{1}}, ${{2}}, ... with the captured fragments
 			transformed := transformCommand(cmd, submatches[1:])
 
@@ -92,7 +114,9 @@ func transformCommand(cmd Command, captures []string) Command {
 			IfFalse:   transformCommand(c.IfFalse, captures),
 		}
 	case CommandGet:
-		return &CommandGet{Key: c.Key}
+		return &CommandGet{
+			Key: substituteCaptures(c.Key, captures),
+		}
 	case CommandReplace:
 		return &CommandReplace{
 			Key:   substituteCaptures(c.Key, captures),
@@ -103,6 +127,38 @@ func transformCommand(cmd Command, captures []string) Command {
 			Key:   substituteCaptures(c.Key, captures),
 			Value: c.Value,
 		}
+	case CommandDelete:
+		return &CommandDelete{
+			Key: substituteCaptures(c.Key, captures),
+		}
+	case CommandPrint:
+		transformed := CommandPrint{Messages: make([]string, len(c.Messages))}
+		for i, msg := range c.Messages {
+			transformed.Messages[i] = substituteCaptures(msg, captures)
+		}
+		return &transformed
+	case CommandReturn:
+		if str, ok := c.Key.(string); ok {
+			return &CommandReturn{Key: substituteCaptures(str, captures)}
+		}
+		return &c
+	case CommandFor:
+		transformed := CommandFor{
+			LoopExpr: substituteCaptures(c.LoopExpr, captures),
+			Commands: make([]Command, len(c.Commands)),
+		}
+		for i, cmd := range c.Commands {
+			transformed.Commands[i] = transformCommand(cmd, captures)
+		}
+		return &transformed
+	case CommandGroup:
+		transformed := CommandGroup{actions: make([]Command, len(c.actions))}
+		for i, action := range c.actions {
+			transformed.actions[i] = transformCommand(action, captures)
+		}
+		return &transformed
+	case CommandNoop:
+		return &c
 	default:
 		return cmd
 	}

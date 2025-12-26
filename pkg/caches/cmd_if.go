@@ -4,11 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/Knetic/govaluate"
 )
+
+// keyIdentifierReplacer is reused for converting keys to identifiers
+var keyIdentifierReplacer = strings.NewReplacer(".", "_", "/", "_", "-", "_")
+
+// exprCache caches compiled expressions to avoid recompiling the same expression
+var exprCache sync.Map // map[string]*govaluate.EvaluableExpression
 
 type CommandIf struct {
 	Condition string  `json:"condition,required"`
@@ -37,12 +43,15 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 		return CmdResult{Error: err}
 	}
 
-	// Now handle remaining simple ${{...}} references
-	re := regexp.MustCompile(`\${{\s*([^}]+?)\s*}}`)
-	matches := re.FindAllStringSubmatch(conditionExpr, -1)
+	// Now handle remaining simple ${{...}} references using shared regex
+	matches := InterpolationPattern.FindAllStringSubmatch(conditionExpr, -1)
 	for _, match := range matches {
 		fullMatch := match[0]
-		key := strings.TrimSpace(match[1])
+		key := match[1]
+		// TrimSpace only if needed
+		if len(key) > 0 && (key[0] == ' ' || key[len(key)-1] == ' ' || key[0] == '\t') {
+			key = strings.TrimSpace(key)
+		}
 
 		val, err := cache.Get(ctx, key)
 		if err != nil {
@@ -53,19 +62,28 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 		conditionExpr = strings.ReplaceAll(conditionExpr, fullMatch, varName)
 	}
 
-	expr, err := govaluate.NewEvaluableExpression(conditionExpr)
-	if err != nil {
-		return CmdResult{Error: fmt.Errorf("invalid expression: %w", err)}
+	// Check cache first
+	var expr *govaluate.EvaluableExpression
+	if cached, ok := exprCache.Load(conditionExpr); ok {
+		expr = cached.(*govaluate.EvaluableExpression)
+	} else {
+		// Compile and cache
+		var err error
+		expr, err = govaluate.NewEvaluableExpression(conditionExpr)
+		if err != nil {
+			return CmdResult{Error: ErrInvalidExpression.Format(err)}
+		}
+		exprCache.Store(conditionExpr, expr)
 	}
 
 	result, err := expr.Evaluate(parameters)
 	if err != nil {
-		return CmdResult{Error: fmt.Errorf("evaluation error: %w", err)}
+		return CmdResult{Error: ErrEvaluationError.Format(err)}
 	}
 
 	isTrue, ok := result.(bool)
 	if !ok {
-		return CmdResult{Error: fmt.Errorf("expression did not return a boolean")}
+		return CmdResult{Error: ErrExpressionNotBoolean}
 	}
 
 	if isTrue {
@@ -75,10 +93,9 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 }
 
 func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx context.Context) (string, error) {
-	re := regexp.MustCompile(`\b(any|all)\(\s*\${{\s*([^}]+?)\s*}}\s*([!<>=]=?|==)\s*([^\)]+?)\s*\)`)
-
-	return re.ReplaceAllStringFunc(expr, func(m string) string {
-		matches := re.FindStringSubmatch(m)
+	// Use shared pre-compiled regex for aggregation functions
+	return AggregationPattern.ReplaceAllStringFunc(expr, func(m string) string {
+		matches := AggregationPattern.FindStringSubmatch(m)
 		if len(matches) != 5 {
 			return m
 		}
@@ -92,28 +109,39 @@ func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx cont
 			return "false" // or error
 		}
 
-		var parts []string
-		for _, key := range keys {
+		// Use strings.Builder for efficient string concatenation
+		var builder strings.Builder
+		join := " || "
+		if mode == "all" {
+			join = " && "
+		}
+
+		builder.WriteByte('(')
+		for i, key := range keys {
 			varName := keyToIdentifier(key)
 			val, err := cache.Get(ctx, key)
 			if err != nil {
 				val = nil
 			}
 			parameters[varName] = val
-			parts = append(parts, fmt.Sprintf("%s %s %s", varName, op, right))
-		}
 
-		join := " || "
-		if mode == "all" {
-			join = " && "
+			if i > 0 {
+				builder.WriteString(join)
+			}
+			builder.WriteString(varName)
+			builder.WriteByte(' ')
+			builder.WriteString(op)
+			builder.WriteByte(' ')
+			builder.WriteString(right)
 		}
-		return "(" + strings.Join(parts, join) + ")"
+		builder.WriteByte(')')
+
+		return builder.String()
 	}), nil
 }
 
 func keyToIdentifier(key string) string {
-	replacer := strings.NewReplacer(".", "_", "/", "_", "-", "_")
-	return replacer.Replace(key)
+	return keyIdentifierReplacer.Replace(key)
 }
 
 func (c *CommandIf) UnmarshalJSON(data []byte) error {
@@ -148,7 +176,7 @@ func (c *CommandIf) UnmarshalJSON(data []byte) error {
 }
 
 func substituteContextVars(ctx context.Context, expr string) string {
-	val := ctx.Value("vars")
+	val := ctx.Value(triggerVarsContextKey)
 	vars, ok := val.([]string)
 	if !ok {
 		return expr

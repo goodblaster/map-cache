@@ -31,6 +31,7 @@ const (
 	CommandTypeInc     CommandType = "INC"
 	CommandTypeNoop    CommandType = "NOOP"
 	CommandTypeGroup   CommandType = "COMMANDS"
+	CommandTypeDelete  CommandType = "DELETE"
 )
 
 func (CommandGroup) Type() CommandType {
@@ -46,6 +47,11 @@ func (p CommandGroup) Do(ctx context.Context, cache *Cache) CmdResult {
 	var resValues []any
 
 	for _, action := range p.actions {
+		// Check for context cancellation
+		if err := ctx.Err(); err != nil {
+			return CmdResult{Error: err}
+		}
+
 		actionRes := action.Do(ctx, cache)
 		if actionRes.Error != nil {
 			return actionRes

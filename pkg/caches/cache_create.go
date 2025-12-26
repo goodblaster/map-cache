@@ -8,6 +8,8 @@ import (
 
 // Create - Create root-level keys/value pairs.
 func (cache *Cache) Create(ctx context.Context, entries map[string]any) error {
+	cache.recordActivity()
+
 	// Check all keys first.
 	// Keys must be a single path segment.
 	// And the keys must not already exist.

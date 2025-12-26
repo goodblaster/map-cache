@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/goodblaster/logos"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +35,7 @@ func TestComplexCommand(t *testing.T) {
 
 	m := map[string]any{}
 	if err := json.Unmarshal([]byte(j), &m); err != nil {
-		logos.Fatal(err)
+		t.Fatal(err)
 	}
 
 	_ = cache.Create(ctx, m)
