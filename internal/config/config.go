@@ -20,6 +20,14 @@ var (
 	// Command execution configuration
 	CommandLongThresholdMs = int64(500)   // 0.5 seconds default
 	CommandTimeoutMs       = int64(10000) // 10 seconds default
+
+	// RESP (Redis Protocol) configuration
+	RESPEnabled        = false
+	RESPAddress        = ":6379"
+	RESPKeyMode        = "translate"   // "translate" (: → /) or "preserve"
+	RESPDefaultCache   = "default"
+	RESPMaxConnections = 1000
+	RESPBackupDir      = "./backups"
 )
 
 func Init(l log.Logger) {
@@ -61,6 +69,33 @@ func Init(l log.Logger) {
 		}
 	}
 
+	// RESP configuration
+	if val := os.Getenv("RESP_ENABLED"); val == "true" || val == "1" {
+		RESPEnabled = true
+	}
+
+	if val := os.Getenv("RESP_ADDRESS"); val != "" {
+		RESPAddress = val
+	}
+
+	if val := os.Getenv("RESP_KEY_MODE"); val != "" {
+		RESPKeyMode = val
+	}
+
+	if val := os.Getenv("RESP_DEFAULT_CACHE"); val != "" {
+		RESPDefaultCache = val
+	}
+
+	if val := os.Getenv("RESP_MAX_CONNECTIONS"); val != "" {
+		if parsed, err := strconv.Atoi(val); err == nil {
+			RESPMaxConnections = parsed
+		}
+	}
+
+	if val := os.Getenv("RESP_BACKUP_DIR"); val != "" {
+		RESPBackupDir = val
+	}
+
 	log.
 		With("KEY_DELIMITER", KeyDelimiter).
 		With("LISTEN_ADDRESS", WebAddress).
@@ -68,5 +103,8 @@ func Init(l log.Logger) {
 		With("TELEMETRY_EXPORTER", TelemetryExporter).
 		With("COMMAND_LONG_THRESHOLD_MS", CommandLongThresholdMs).
 		With("COMMAND_TIMEOUT_MS", CommandTimeoutMs).
+		With("RESP_ENABLED", RESPEnabled).
+		With("RESP_ADDRESS", RESPAddress).
+		With("RESP_KEY_MODE", RESPKeyMode).
 		Info("Configuration initialized")
 }

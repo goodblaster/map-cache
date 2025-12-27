@@ -21,6 +21,7 @@ import (
 	"github.com/goodblaster/map-cache/internal/build"
 	"github.com/goodblaster/map-cache/internal/config"
 	"github.com/goodblaster/map-cache/internal/log"
+	"github.com/goodblaster/map-cache/internal/resp"
 	"github.com/goodblaster/map-cache/internal/telemetry"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
@@ -151,28 +152,45 @@ func main() {
 	e.GET("/debug/pprof/mutex", echo.WrapHandler(pprof.Handler("mutex")))
 	e.GET("/debug/pprof/threadcreate", echo.WrapHandler(pprof.Handler("threadcreate")))
 
-	// Start server in a goroutine so we can handle shutdown signals
+	// Start HTTP server in a goroutine so we can handle shutdown signals
 	go func() {
-		log.With("address", config.WebAddress).Info("starting server")
+		log.With("address", config.WebAddress).Info("starting HTTP server")
 		if err := e.Start(config.WebAddress); err != nil && err != http.ErrServerClosed {
-			log.WithError(err).With("address", config.WebAddress).Fatal("failed to start web server")
+			log.WithError(err).With("address", config.WebAddress).Fatal("failed to start HTTP server")
 		}
 	}()
+
+	// Start RESP server if enabled
+	var respServer *resp.Server
+	if config.RESPEnabled {
+		respServer = resp.NewServer()
+		if err := respServer.Start(); err != nil {
+			log.WithError(err).Fatal("failed to start RESP server")
+		}
+	}
 
 	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	log.Info("shutting down server...")
+	log.Info("shutting down servers...")
 
-	// Give the server 10 seconds to finish handling existing requests
+	// Give the servers 10 seconds to finish handling existing requests
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Shutdown HTTP server
 	if err := e.Shutdown(ctx); err != nil {
-		log.WithError(err).Fatal("server forced to shutdown")
+		log.WithError(err).Error("HTTP server forced to shutdown")
 	}
 
-	log.Info("server exited gracefully")
+	// Shutdown RESP server if it was started
+	if respServer != nil {
+		if err := respServer.Shutdown(ctx); err != nil {
+			log.WithError(err).Error("RESP server forced to shutdown")
+		}
+	}
+
+	log.Info("servers exited gracefully")
 }
