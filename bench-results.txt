@@ -1,0 +1,21 @@
+goos: darwin
+goarch: arm64
+cpu: Apple M4 Pro
+BenchmarkRESP_GET-12                	   48342	     22617 ns/op	     208 B/op	       7 allocs/op
+BenchmarkHTTP_GET-12                	   25274	     48206 ns/op	    5054 B/op	      60 allocs/op
+BenchmarkRESP_SET-12                	   54854	     22383 ns/op	     251 B/op	       7 allocs/op
+BenchmarkHTTP_SET-12                	   27536	     43721 ns/op	    4939 B/op	      61 allocs/op
+BenchmarkRESP_INCR-12               	   49032	     23876 ns/op	     440 B/op	      26 allocs/op
+BenchmarkHTTP_INCR-12               	    5166	    229651 ns/op	   19293 B/op	     147 allocs/op
+BenchmarkRESP_HSET-12               	   48879	     22919 ns/op	     217 B/op	       6 allocs/op
+BenchmarkHTTP_HSET-12               	   26217	     46265 ns/op	    4963 B/op	      60 allocs/op
+BenchmarkRESP_HGET-12               	   60574	     21085 ns/op	     240 B/op	       8 allocs/op
+BenchmarkHTTP_HGET-12               	   24783	     49802 ns/op	    5071 B/op	      60 allocs/op
+BenchmarkRESP_LPUSH-12              	   31363	     86425 ns/op	     200 B/op	       6 allocs/op
+BenchmarkHTTP_LPUSH-12              	    5343	    225302 ns/op	   19499 B/op	     149 allocs/op
+BenchmarkRESP_MixedOperations-12    	   12638	     93411 ns/op	     949 B/op	      31 allocs/op
+BenchmarkHTTP_MixedOperations-12    	    3214	    574839 ns/op	   35118 B/op	     341 allocs/op
+BenchmarkRESP_MGET-12               	   42722	     26814 ns/op	     888 B/op	      36 allocs/op
+BenchmarkHTTP_MGET-12               	    2310	    492617 ns/op	   50712 B/op	     610 allocs/op
+PASS
+ok  	command-line-arguments	27.253s

@@ -12,7 +12,7 @@ import (
 )
 
 func Test_Big(t *testing.T) {
-	t.Skip("Skipping big test for performance reasons")
+	//t.Skip("Skipping big test for performance reasons")
 
 	ctx := context.Background()
 	cache := New()

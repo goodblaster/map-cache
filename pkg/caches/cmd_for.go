@@ -152,9 +152,9 @@ func transformCommand(cmd Command, captures []string) Command {
 		}
 		return &transformed
 	case CommandGroup:
-		transformed := CommandGroup{actions: make([]Command, len(c.actions))}
-		for i, action := range c.actions {
-			transformed.actions[i] = transformCommand(action, captures)
+		transformed := CommandGroup{Actions: make([]Command, len(c.Actions))}
+		for i, action := range c.Actions {
+			transformed.Actions[i] = transformCommand(action, captures)
 		}
 		return &transformed
 	case CommandNoop:
