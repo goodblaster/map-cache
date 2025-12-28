@@ -12,11 +12,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// checkRedisAvailable skips the test if Redis is not available
+func checkRedisAvailable(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	testClient := redis.NewClient(&redis.Options{
+		Addr:            "localhost:6379",
+		MaxRetries:      1,
+		ConnMaxLifetime: time.Second,
+	})
+	defer testClient.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	if err := testClient.Ping(ctx).Err(); err != nil {
+		t.Skipf("Skipping test: Redis server not available")
+	}
+}
+
 // TestRESP_ConcurrentConnections tests 100+ simultaneous client connections
 func TestRESP_ConcurrentConnections(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	checkRedisAvailable(t)
 
 	const numClients = 150
 	const opsPerClient = 100
@@ -92,9 +111,7 @@ func TestRESP_ConcurrentConnections(t *testing.T) {
 
 // TestRESP_SustainedLoad tests sustained 10k+ ops/sec
 func TestRESP_SustainedLoad(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	checkRedisAvailable(t)
 
 	const duration = 10 * time.Second
 	const targetOpsPerSec = 10000
@@ -184,9 +201,7 @@ func TestRESP_SustainedLoad(t *testing.T) {
 
 // TestRESP_ConnectionPoolExhaustion tests behavior under connection limits
 func TestRESP_ConnectionPoolExhaustion(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	checkRedisAvailable(t)
 
 	const numConnections = 500
 	ctx := context.Background()
@@ -237,9 +252,7 @@ func TestRESP_ConnectionPoolExhaustion(t *testing.T) {
 
 // TestRESP_TTLExpirationAtScale tests TTL expiration with 10k+ keys
 func TestRESP_TTLExpirationAtScale(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	checkRedisAvailable(t)
 
 	const numKeys = 10000
 	const ttlSeconds = 5
@@ -306,9 +319,7 @@ func TestRESP_TTLExpirationAtScale(t *testing.T) {
 
 // TestRESP_MixedWorkloadStress tests realistic mixed operations under load
 func TestRESP_MixedWorkloadStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	checkRedisAvailable(t)
 
 	const duration = 10 * time.Second
 	const numWorkers = 20
@@ -423,9 +434,7 @@ func TestRESP_MixedWorkloadStress(t *testing.T) {
 
 // TestRESP_ConcurrentHashOperations tests concurrent access to same hash
 func TestRESP_ConcurrentHashOperations(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping stress test in short mode")
-	}
+	checkRedisAvailable(t)
 
 	const numWorkers = 50
 	const opsPerWorker = 100

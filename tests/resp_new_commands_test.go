@@ -10,16 +10,23 @@ import (
 )
 
 func setupRESPClient(t *testing.T) *redis.Client {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
 	client := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr:       "localhost:6379",
+		MaxRetries: 1,
 	})
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 
 	// Verify connection
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
-		t.Fatalf("Failed to connect to RESP server: %v", err)
+		client.Close()
+		t.Skipf("Skipping test: Redis server not available")
 	}
 
 	return client

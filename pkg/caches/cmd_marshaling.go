@@ -168,6 +168,25 @@ func (c CommandGroup) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (c *CommandGroup) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Commands []json.RawMessage `json:"commands"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	c.Actions = make([]Command, len(aux.Commands))
+	for i, rawCmd := range aux.Commands {
+		var raw RawCommand
+		if err := json.Unmarshal(rawCmd, &raw); err != nil {
+			return err
+		}
+		c.Actions[i] = raw.Command
+	}
+	return nil
+}
+
 func (c CommandDelete) MarshalJSON() ([]byte, error) {
 	type Alias CommandDelete
 	return json.Marshal(struct {

@@ -15,6 +15,7 @@ import (
 func TestScenario_SessionManagement(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
+	defer cache.Close()
 
 	// Create a user session with nested data
 	sessionID := "sess_abc123"
@@ -29,8 +30,8 @@ func TestScenario_SessionManagement(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Set session to expire in 30 minutes (simulated as 100ms for test)
-	err = cache.SetKeyTTL(ctx, sessionID, 100)
+	// Set session to expire in 30 minutes (simulated as 1ms for test)
+	err = cache.SetKeyTTL(ctx, sessionID, 1)
 	require.NoError(t, err)
 
 	// Retrieve user info from session
@@ -45,8 +46,8 @@ func TestScenario_SessionManagement(t *testing.T) {
 	_, err = cache.Get(ctx, sessionID)
 	assert.NoError(t, err)
 
-	// Wait for expiration
-	time.Sleep(150 * time.Millisecond)
+	// Wait for expiration AND batch processing (100ms ticker + margin)
+	time.Sleep(200 * time.Millisecond)
 
 	// Session should be auto-deleted
 	_, err = cache.Get(ctx, sessionID)
@@ -114,6 +115,7 @@ func TestScenario_FeatureFlags(t *testing.T) {
 func TestScenario_RateLimiting(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
+	defer cache.Close()
 
 	userID := "user_123"
 	apiKey := "rate_limit/" + userID
@@ -128,8 +130,8 @@ func TestScenario_RateLimiting(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Set to expire in 1 minute (simulated as 100ms)
-	err = cache.SetKeyTTL(ctx, apiKey, 100)
+	// Set to expire in 1 minute (simulated as 1ms)
+	err = cache.SetKeyTTL(ctx, apiKey, 1)
 	require.NoError(t, err)
 
 	// Simulate API requests
@@ -154,8 +156,8 @@ func TestScenario_RateLimiting(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, float64(5), count)
 
-	// Wait for expiration (auto-reset)
-	time.Sleep(150 * time.Millisecond)
+	// Wait for expiration AND batch processing (100ms ticker + margin)
+	time.Sleep(200 * time.Millisecond)
 
 	// Rate limit should be reset
 	_, err = cache.Get(ctx, apiKey)
@@ -351,6 +353,7 @@ func TestScenario_Leaderboard(t *testing.T) {
 func TestScenario_PresenceTracking(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
+	defer cache.Close()
 
 	// Initialize online users
 	err := cache.Create(ctx, map[string]any{
@@ -370,7 +373,7 @@ func TestScenario_PresenceTracking(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set expiration for user presence (auto-logout after inactivity)
-	err = cache.SetKeyTTL(ctx, "online/user_100", 100)
+	err = cache.SetKeyTTL(ctx, "online/user_100", 1)
 	assert.NoError(t, err)
 
 	// Get count of online users
@@ -385,11 +388,11 @@ func TestScenario_PresenceTracking(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Refresh expiration
-	err = cache.SetKeyTTL(ctx, "online/user_100", 100)
+	err = cache.SetKeyTTL(ctx, "online/user_100", 1)
 	assert.NoError(t, err)
 
-	// Wait for one user to go offline
-	time.Sleep(150 * time.Millisecond)
+	// Wait for expiration AND batch processing (100ms ticker + margin)
+	time.Sleep(200 * time.Millisecond)
 
 	// Only user_101 should remain
 	_, err = cache.Get(ctx, "online/user_100")
@@ -560,6 +563,7 @@ func TestScenario_MetricsAggregation(t *testing.T) {
 func TestScenario_DistributedLock(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
+	defer cache.Close()
 
 	lockKey := "locks/critical_section"
 	processID := "process_abc"
@@ -574,7 +578,7 @@ func TestScenario_DistributedLock(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set lock expiration (auto-release if process crashes)
-	err = cache.SetKeyTTL(ctx, lockKey, 200) // 200ms for test
+	err = cache.SetKeyTTL(ctx, lockKey, 1) // 1ms for test
 	assert.NoError(t, err)
 
 	// Verify lock is held
@@ -605,11 +609,11 @@ func TestScenario_DistributedLock(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Set TTL for auto-expiration test
-	err = cache.SetKeyTTL(ctx, lockKey, 200) // 200ms for test
+	err = cache.SetKeyTTL(ctx, lockKey, 1) // 1ms for test
 	assert.NoError(t, err)
 
-	// Wait for auto-expiration
-	time.Sleep(250 * time.Millisecond)
+	// Wait for expiration AND batch processing (100ms ticker + margin)
+	time.Sleep(200 * time.Millisecond)
 
 	// Lock should be released
 	_, err = cache.Get(ctx, lockKey)

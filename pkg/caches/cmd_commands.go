@@ -16,7 +16,7 @@ type Command interface {
 }
 
 type CommandGroup struct {
-	actions []Command
+	Actions []Command `json:"commands"`
 }
 
 type CommandType string
@@ -39,14 +39,14 @@ func (CommandGroup) Type() CommandType {
 }
 
 func COMMANDS(actions ...Command) Command {
-	return CommandGroup{actions: actions}
+	return CommandGroup{Actions: actions}
 }
 
 func (p CommandGroup) Do(ctx context.Context, cache *Cache) CmdResult {
 	var res CmdResult
 	var resValues []any
 
-	for _, action := range p.actions {
+	for _, action := range p.Actions {
 		// Check for context cancellation
 		if err := ctx.Err(); err != nil {
 			return CmdResult{Error: err}

@@ -17,7 +17,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	fmt.Println("=== COMPREHENSIVE REDIS INTEGRATION TEST ===\n")
+	fmt.Println("=== COMPREHENSIVE REDIS INTEGRATION TEST ===")
+	fmt.Println()
 
 	// Test 1: Basic connectivity
 	fmt.Println("1. Testing basic connectivity...")

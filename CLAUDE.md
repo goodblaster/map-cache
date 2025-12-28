@@ -252,15 +252,39 @@ For complete Redis protocol documentation, see [REDIS.md](REDIS.md).
 
 ### Testing Strategy
 
-- Unit tests alongside implementation files (`*_test.go`)
-- `big_test.go`: Complex scenario test with 100+ domains, cascading triggers, and countdown logic
+**Unit Tests** (`pkg/caches/*_test.go`)
+- Unit tests alongside implementation files
+- `big_test.go`: Complex scenario test with 100+ domains, cascading triggers, and countdown logic (currently skipped for performance)
+- `scenarios_test.go`: 11 production-ready scenario tests (session management, rate limiting, leaderboards, distributed locks, etc.)
 - `stress_test.go`: Concurrent access tests
-- Integration tests in `tests/` directory
-- Benchmark tests (`*_benchmark_test.go`):
-  - `cache_benchmark_test.go`: Benchmarks for core cache operations (Get, Create, Replace, Delete, Increment, etc.)
-  - `cmd_benchmark_test.go`: Benchmarks for command execution (INC, REPLACE, IF, FOR, interpolation, etc.)
-  - `gabs_map_benchmark_test.go`: Benchmarks for container operations and wildcard pattern matching
-- Use `testify/assert` for assertions
+- `cache_expire_test.go`: TTL and expiration tests (account for 100ms batch processing delay)
+
+**Integration Tests** (`tests/`)
+- `resp_new_commands_test.go`: Redis protocol command tests (35+ tests)
+- `resp_stress_test.go`: Redis protocol stress tests (connection pooling, sustained load, TTL at scale)
+- `basics_test.go`: Basic cache functionality tests
+- **All integration tests skip gracefully** when Redis server is not available (using optimized connection checks with 1-second timeout)
+
+**Example Tests** (`examples/`)
+- `hybrid_countdown_example_test.go`: Demonstrates hybrid HTTP + Redis workflows
+  - `TestHybridCountdownExample`: Multi-stage deployment pipeline with cascading triggers
+  - `TestHybridCountdownSimple`: Simple countdown example
+- **Tests skip when servers unavailable**: Checks for both HTTP (localhost:8080) and Redis (localhost:6379) before running
+
+**Benchmark Tests** (`*_benchmark_test.go`)
+- `cache_benchmark_test.go`: Core cache operations (Get, Create, Replace, Delete, Increment)
+- `cmd_benchmark_test.go`: Command execution (INC, REPLACE, IF, FOR, interpolation)
+- `gabs_map_benchmark_test.go`: Container operations and wildcard pattern matching
+
+**Standalone Test Programs** (`tests/redis_tests/`)
+- Manual Redis protocol test programs (not Go tests)
+- Each program in its own subdirectory: `test_hash_commands/`, `test_string_commands/`, etc.
+- Run directly: `go run tests/redis_tests/test_hash_commands/main.go`
+
+**Test Conventions**
+- Use `testify/assert` and `testify/require` for assertions
+- Integration tests use `t.Skip()` when dependencies unavailable (optimized with MaxRetries=1 for fast skip)
+- Expiration tests account for 100ms batch processing ticker (sleep 200ms for 1ms TTL)
 
 ## Key Patterns
 

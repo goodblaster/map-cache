@@ -3,6 +3,7 @@ package caches
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/goodblaster/map-cache/internal/log"
 )
@@ -23,6 +24,17 @@ func (p CommandPrint) Do(ctx context.Context, cache *Cache) CmdResult {
 	var res CmdResult
 	var resValues []any
 	for _, msg := range p.Messages {
+		// First, interpolate wildcard variables (e.g., ${{1}} → actual wildcard match)
+		if val := ctx.Value(triggerVarsContextKey); val != nil {
+			if vars, ok := val.([]string); ok {
+				for i, v := range vars {
+					placeholder := fmt.Sprintf("${{%d}}", i+1)
+					msg = strings.ReplaceAll(msg, placeholder, v)
+				}
+			}
+		}
+
+		// Then, extract and replace key references
 		msg, keys := ExtractAndReplaceParams(msg)
 		var params []any
 

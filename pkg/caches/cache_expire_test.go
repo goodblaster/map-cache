@@ -11,6 +11,8 @@ import (
 func TestSetKeyExpiration(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
+	defer cache.Close()
+
 	err := cache.Create(ctx, map[string]any{
 		"test": "value",
 	})
@@ -24,8 +26,8 @@ func TestSetKeyExpiration(t *testing.T) {
 	// Set brief expiration
 	err = cache.SetKeyTTL(ctx, "test", 1)
 
-	// Sleep for a bit to let the expiration happen
-	time.Sleep(time.Millisecond * 5)
+	// Sleep long enough for expiration AND batch processing (100ms ticker + margin)
+	time.Sleep(time.Millisecond * 150)
 
 	// Check if the cache is expired
 	_, err = cache.Get(ctx, "test")
@@ -35,6 +37,8 @@ func TestSetKeyExpiration(t *testing.T) {
 func TestSetKeyExpirationNested(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
+	defer cache.Close()
+
 	err := cache.Create(ctx, map[string]any{
 		"test": map[string]any{
 			"nested": "value",
@@ -50,8 +54,8 @@ func TestSetKeyExpirationNested(t *testing.T) {
 	// Set brief expiration
 	err = cache.SetKeyTTL(ctx, "test/nested", 1)
 
-	// Sleep for a bit to let the expiration happen
-	time.Sleep(time.Millisecond * 5)
+	// Sleep long enough for expiration AND batch processing (100ms ticker + margin)
+	time.Sleep(time.Millisecond * 150)
 
 	// test should still be there
 	_, err = cache.Get(ctx, "test")
@@ -65,6 +69,8 @@ func TestSetKeyExpirationNested(t *testing.T) {
 func TestKeyExpirationChange(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
+	defer cache.Close()
+
 	err := cache.Create(ctx, map[string]any{
 		"test": "value",
 	})
@@ -78,8 +84,8 @@ func TestKeyExpirationChange(t *testing.T) {
 	err = cache.SetKeyTTL(ctx, "test", 1)
 	assert.NoError(t, err)
 
-	// Sleep for a bit to let the expiration happen
-	time.Sleep(time.Millisecond * 5)
+	// Sleep long enough for expiration AND batch processing (100ms ticker + margin)
+	time.Sleep(time.Millisecond * 150)
 
 	// Check if the cache is expired
 	_, err = cache.Get(ctx, "test")
@@ -89,6 +95,8 @@ func TestKeyExpirationChange(t *testing.T) {
 func TestKeyExpirationCancel(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
+	defer cache.Close()
+
 	err := cache.Create(ctx, map[string]any{
 		"test": "value",
 	})

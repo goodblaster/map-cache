@@ -669,11 +669,44 @@ KEYS user:*:email
 # 3) "user:300:email"
 ```
 
+### Test Programs
+
+Standalone test programs are available in `tests/redis_tests/` to help you verify Redis protocol functionality:
+
+```bash
+# Run hash commands test
+go run tests/redis_tests/test_hash_commands/main.go
+
+# Run string commands test
+go run tests/redis_tests/test_string_commands/main.go
+
+# Run list commands test
+go run tests/redis_tests/test_list_commands/main.go
+
+# Run key commands test
+go run tests/redis_tests/test_key_commands/main.go
+
+# Run comprehensive integration test
+go run tests/redis_tests/test_integration/main.go
+```
+
+These programs demonstrate real-world usage patterns and can be used to verify server behavior.
+
+**Available test programs:**
+- `test_hash_commands/` - HSET, HGET, HGETALL, HDEL, etc.
+- `test_string_commands/` - GET, SET, INCR, MGET, MSET, etc.
+- `test_list_commands/` - LPUSH, RPUSH, LPOP, LRANGE, LTRIM, etc.
+- `test_key_commands/` - EXPIRE, TTL, KEYS, RENAME, TYPE, etc.
+- `test_integration/` - Comprehensive test covering all command categories
+- `test_select_caches/` - Multi-cache testing with SELECT command
+- `test_redis_client/` - Basic connectivity and client usage
+
 ## Further Reading
 
 - [Map-cache HTTP API Documentation](./README.md)
 - [Architecture Overview](./CLAUDE.md)
 - [Redis Protocol Specification (RESP2)](https://redis.io/docs/reference/protocol-spec/)
+- [Hybrid Example Tests](./examples/hybrid_countdown_example_test.go) - HTTP + Redis integration patterns
 
 ## Summary
 

@@ -17,7 +17,8 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	fmt.Println("=== REDIS LIST COMMANDS TEST ===\n")
+	fmt.Println("=== REDIS LIST COMMANDS TEST ===")
+	fmt.Println()
 
 	// Test 1: RPUSH (append to list)
 	fmt.Println("1. Testing RPUSH...")
