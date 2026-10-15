@@ -21,8 +21,6 @@ type Session struct {
 	connID        uint64
 	reader        *resp.Conn
 	selectedCache string
-	multiMode     bool
-	multiCmds     []resp.Value
 	ctx           context.Context
 	cancel        context.CancelFunc
 }
@@ -37,8 +35,6 @@ func NewSession(parent context.Context, conn net.Conn) *Session {
 		connID:        connID,
 		reader:        resp.NewConn(conn),
 		selectedCache: config.RESPDefaultCache,
-		multiMode:     false,
-		multiCmds:     []resp.Value{},
 		ctx:           ctx,
 		cancel:        cancel,
 	}

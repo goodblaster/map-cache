@@ -36,14 +36,6 @@ func HandleCommand(s *Session, cmd resp.Value) error {
 	cmdName := strings.ToUpper(values[0].String())
 	args := values[1:]
 
-	// If in MULTI mode, queue commands (except EXEC, DISCARD, MULTI)
-	if s.multiMode {
-		if cmdName != "EXEC" && cmdName != "DISCARD" && cmdName != "MULTI" {
-			s.multiCmds = append(s.multiCmds, cmd)
-			return s.WriteValue(SimpleString("QUEUED"))
-		}
-	}
-
 	// Look up the handler
 	handler, exists := commandRegistry[cmdName]
 	if !exists {
