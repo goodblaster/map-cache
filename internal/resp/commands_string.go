@@ -76,8 +76,9 @@ func HandleSet(s *Session, args []respProto.Value) error {
 
 	// Parse optional arguments (EX, PX, NX, XX, etc.)
 	var ttlMillis *int64
-	nx := false  // Only set if key doesn't exist
-	xx := false  // Only set if key exists
+	nx := false      // Only set if key doesn't exist
+	xx := false      // Only set if key exists
+	keepTTL := false // Retain the existing TTL
 
 	for i := 2; i < len(args); i++ {
 		opt := strings.ToUpper(args[i].String())
@@ -107,9 +108,15 @@ func HandleSet(s *Session, args []respProto.Value) error {
 			nx = true
 		case "XX":
 			xx = true
+		case "KEEPTTL":
+			keepTTL = true
 		default:
 			return s.WriteError(fmt.Sprintf("ERR unknown option '%s'", opt))
 		}
+	}
+
+	if (nx && xx) || (keepTTL && ttlMillis != nil) {
+		return s.WriteError("ERR syntax error")
 	}
 
 	cache, err := caches.FetchCache(s.SelectedCache())
@@ -137,22 +144,23 @@ func HandleSet(s *Session, args []respProto.Value) error {
 	}
 
 	// Set the value (create if doesn't exist, replace if does)
-	_, getErr := cache.Get(ctx, key)
-	if getErr == nil {
-		// Key exists, use Replace
+	if exists {
 		if err := cache.Replace(ctx, key, value); err != nil {
 			return s.WriteError(fmt.Sprintf("ERR %s", err.Error()))
 		}
 	} else {
-		// Key doesn't exist, use Create
 		if err := cache.Create(ctx, map[string]any{key: value}); err != nil {
 			return s.WriteError(fmt.Sprintf("ERR %s", err.Error()))
 		}
 	}
 
-	// Set TTL if specified
+	// Like Redis, a plain SET discards any existing TTL unless KEEPTTL is given.
 	if ttlMillis != nil {
 		if err := cache.SetKeyTTL(ctx, key, *ttlMillis); err != nil {
+			return s.WriteError(fmt.Sprintf("ERR %s", err.Error()))
+		}
+	} else if !keepTTL {
+		if err := cache.CancelKeyTTL(ctx, key); err != nil {
 			return s.WriteError(fmt.Sprintf("ERR %s", err.Error()))
 		}
 	}
