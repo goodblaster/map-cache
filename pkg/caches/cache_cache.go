@@ -23,9 +23,9 @@ type Cache struct {
 	opStats       *OperationStats      // long-running operation tracking
 
 	// Batch expiration handling to prevent goroutine storms
-	expirationChan chan string      // channel for expired keys
-	expirationStop chan struct{}    // signal to stop expiration worker
-	expirationWg   sync.WaitGroup   // wait for worker to finish
+	expirationChan chan expiredKey // channel for expired keys
+	expirationStop chan struct{}   // signal to stop expiration worker
+	expirationWg   sync.WaitGroup  // wait for worker to finish
 }
 
 func New() *Cache {
@@ -34,8 +34,8 @@ func New() *Cache {
 		mutex:          &sync.Mutex{},
 		keyExps:        map[string]*Timer{},
 		triggers:       map[string][]Trigger{},
-		opStats:        NewOperationStats(100), // Keep last 100 long operations
-		expirationChan: make(chan string, 1000), // Buffer for 1000 expired keys
+		opStats:        NewOperationStats(100),      // Keep last 100 long operations
+		expirationChan: make(chan expiredKey, 1000), // Buffer for 1000 expired keys
 		expirationStop: make(chan struct{}),
 	}
 

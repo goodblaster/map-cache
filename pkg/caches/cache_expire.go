@@ -7,6 +7,14 @@ import (
 	"github.com/goodblaster/map-cache/internal/log"
 )
 
+// expiredKey identifies a key whose timer fired. The timer is carried along so
+// the worker can tell whether the key's TTL was replaced or cancelled after the
+// timer fired but before the batch was processed.
+type expiredKey struct {
+	key   string
+	timer *Timer
+}
+
 // expirationWorker processes expired keys in batches to prevent goroutine storms.
 // This runs in a dedicated goroutine for the lifetime of the cache.
 func (cache *Cache) expirationWorker() {
@@ -14,11 +22,11 @@ func (cache *Cache) expirationWorker() {
 
 	// Batch collection parameters
 	const (
-		maxBatchSize   = 100                   // Maximum keys to delete at once
-		batchTimeout   = 100 * time.Millisecond // Maximum time to wait for batch
+		maxBatchSize = 100                    // Maximum keys to delete at once
+		batchTimeout = 100 * time.Millisecond // Maximum time to wait for batch
 	)
 
-	batch := make([]string, 0, maxBatchSize)
+	batch := make([]expiredKey, 0, maxBatchSize)
 	ticker := time.NewTicker(batchTimeout)
 	defer ticker.Stop()
 
@@ -35,7 +43,14 @@ func (cache *Cache) expirationWorker() {
 		cache.Acquire(tag)
 
 		// Delete all keys in batch
-		for _, key := range batch {
+		for _, expired := range batch {
+			key := expired.key
+
+			// Skip keys whose TTL was reset or cancelled after this timer fired.
+			if cache.keyExps[key] != expired.timer {
+				continue
+			}
+
 			// Record activity for the batch
 			cache.recordActivity()
 
@@ -59,9 +74,9 @@ func (cache *Cache) expirationWorker() {
 
 	for {
 		select {
-		case key := <-cache.expirationChan:
+		case expired := <-cache.expirationChan:
 			// Add key to batch
-			batch = append(batch, key)
+			batch = append(batch, expired)
 
 			// Process if batch is full
 			if len(batch) >= maxBatchSize {
@@ -91,10 +106,10 @@ func (cache *Cache) SetKeyTTL(ctx context.Context, key string, milliseconds int6
 
 	// Create a new timer that sends the key to the expiration channel.
 	// The expiration worker will handle the actual deletion in batches.
-	cache.keyExps[key] = FutureFunc(milliseconds, func() {
+	cache.keyExps[key] = futureTimer(milliseconds, func(t *Timer) {
 		// Send key to expiration channel (non-blocking)
 		select {
-		case cache.expirationChan <- key:
+		case cache.expirationChan <- expiredKey{key: key, timer: t}:
 			// Key sent successfully
 		default:
 			// Channel full - delete directly as fallback

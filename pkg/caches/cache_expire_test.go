@@ -118,3 +118,37 @@ func TestKeyExpirationCancel(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualValues(t, "value", val)
 }
+
+// A timer that has already fired must not delete the key if its TTL was reset
+// or cancelled before the expiration worker processed it.
+func TestKeyTTL_ResetAfterTimerFired(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		update func(ctx context.Context, cache *Cache) error
+	}{
+		{"reset", func(ctx context.Context, cache *Cache) error { return cache.SetKeyTTL(ctx, "k", 60_000) }},
+		{"cancel", func(ctx context.Context, cache *Cache) error { return cache.CancelKeyTTL(ctx, "k") }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			cache := New()
+			defer cache.Close()
+
+			// Hold the lock so the worker can't process the fired timer until
+			// after the TTL has been updated.
+			cache.Acquire("test")
+			assert.NoError(t, cache.Create(ctx, map[string]any{"k": "v"}))
+			assert.NoError(t, cache.SetKeyTTL(ctx, "k", 1))
+			time.Sleep(20 * time.Millisecond)
+			assert.NoError(t, tc.update(ctx, cache))
+			cache.Release("test")
+
+			time.Sleep(250 * time.Millisecond)
+
+			cache.Acquire("test")
+			defer cache.Release("test")
+			_, err := cache.Get(ctx, "k")
+			assert.NoError(t, err, "key should survive")
+		})
+	}
+}
