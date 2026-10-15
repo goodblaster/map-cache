@@ -2,7 +2,9 @@ package resp
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync/atomic"
 
@@ -26,9 +28,9 @@ type Session struct {
 }
 
 // NewSession creates a new session for a client connection
-func NewSession(conn net.Conn) *Session {
+func NewSession(parent context.Context, conn net.Conn) *Session {
 	connID := atomic.AddUint64(&connIDCounter, 1)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(parent)
 
 	return &Session{
 		conn:          conn,
@@ -96,7 +98,7 @@ func (s *Session) Handle() {
 		cmd, err := s.ReadCommand()
 		if err != nil {
 			// Client disconnected or error reading
-			if err.Error() != "EOF" {
+			if !errors.Is(err, io.EOF) && !errors.Is(err, net.ErrClosed) {
 				log.WithError(err).
 					With("conn_id", s.connID).
 					Warn("Error reading command")

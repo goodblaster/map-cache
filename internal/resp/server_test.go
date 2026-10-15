@@ -40,3 +40,19 @@ func startTestServer(t *testing.T) (*Server, *redis.Client) {
 
 	return srv, client
 }
+
+func TestShutdown_WithIdleClient(t *testing.T) {
+	srv, client := startTestServer(t)
+	ctx := context.Background()
+
+	// Establish an idle connection.
+	require.NoError(t, client.Ping(ctx).Err())
+
+	shutdownCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	start := time.Now()
+	require.NoError(t, srv.Shutdown(shutdownCtx))
+	require.Less(t, time.Since(start), time.Second)
+	require.Equal(t, 0, srv.ActiveConnections())
+}

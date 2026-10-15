@@ -13,12 +13,13 @@ import (
 
 // Server represents the RESP (Redis Protocol) TCP server
 type Server struct {
-	listener       net.Listener
-	activeConns    int32
-	wg             sync.WaitGroup
-	ctx            context.Context
-	cancel         context.CancelFunc
-	shutdownChan   chan struct{}
+	listener     net.Listener
+	activeConns  int32
+	wg           sync.WaitGroup
+	ctx          context.Context
+	cancel       context.CancelFunc
+	shutdownChan chan struct{}
+	conns        sync.Map // net.Conn -> struct{}; open client connections
 }
 
 // NewServer creates a new RESP server
@@ -85,7 +86,16 @@ func (srv *Server) handleConnection(conn net.Conn) {
 	defer srv.wg.Done()
 	defer atomic.AddInt32(&srv.activeConns, -1)
 
-	session := NewSession(conn)
+	srv.conns.Store(conn, struct{}{})
+	defer srv.conns.Delete(conn)
+
+	// If Shutdown ran between Accept and Store, it missed this connection.
+	if srv.ctx.Err() != nil {
+		conn.Close()
+		return
+	}
+
+	session := NewSession(srv.ctx, conn)
 	session.Handle()
 }
 
@@ -99,6 +109,13 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	if srv.listener != nil {
 		srv.listener.Close()
 	}
+
+	// Close client connections so sessions blocked reading an idle client
+	// return instead of holding up shutdown.
+	srv.conns.Range(func(key, _ any) bool {
+		key.(net.Conn).Close()
+		return true
+	})
 
 	// Wait for all connections to finish (or context timeout)
 	done := make(chan struct{})
