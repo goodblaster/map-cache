@@ -244,3 +244,39 @@ func TestRestoreInvalidJSON(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error decoding backup file")
 }
+
+// Restored key TTLs must expire through the locked expiration worker
+// (run with -race to catch unlocked deletes from timer goroutines).
+func TestRestoreKeyExpirationFires(t *testing.T) {
+	ctx := context.Background()
+
+	tmpfile, err := os.CreateTemp("", "restore_exp_fire_test_*.json")
+	require.NoError(t, err)
+	defer os.Remove(tmpfile.Name())
+
+	backup := RestoreContainer{
+		Data:           map[string]any{"key1": "value1", "key2": "value2"},
+		KeyExpirations: map[string]int64{"key1": time.Now().Add(time.Second).Unix()},
+		Triggers:       map[string][]RawTrigger{},
+	}
+	require.NoError(t, json.NewEncoder(tmpfile).Encode(backup))
+	tmpfile.Close()
+
+	require.NoError(t, Restore(ctx, "test-restore-exp-fire", tmpfile.Name()))
+	defer DeleteCache("test-restore-exp-fire")
+
+	cache, err := FetchCache("test-restore-exp-fire")
+	require.NoError(t, err)
+
+	assert.Eventually(t, func() bool {
+		cache.Acquire("test")
+		defer cache.Release("test")
+		_, err := cache.Get(ctx, "key1")
+		return err != nil && len(cache.keyExps) == 0
+	}, 3*time.Second, 50*time.Millisecond)
+
+	cache.Acquire("test")
+	defer cache.Release("test")
+	_, err = cache.Get(ctx, "key2")
+	assert.NoError(t, err)
+}

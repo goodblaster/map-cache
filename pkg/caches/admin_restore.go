@@ -40,14 +40,15 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 	// Set the cache expiration
 	if cacheName != DefaultName && backup.Expiration != nil {
 		exp := time.Unix(*backup.Expiration, 0)
-		cache.exp = FutureFunc(int64(exp.Sub(time.Now()).Milliseconds()), func() {
+		ms := time.Until(exp).Milliseconds()
+		cache.exp = FutureFunc(ms, func() {
 			caches.Delete(cacheName)
 		})
+		cache.expMillis = &ms
 	}
 
 	// Set the key expirations
 	for key, ttl := range backup.KeyExpirations {
-		key := key // Capture loop variable to avoid closure bug
 		exp := time.Unix(ttl, 0)
 		duration := int64(exp.Sub(time.Now()).Milliseconds())
 
@@ -57,13 +58,11 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 			continue
 		}
 
-		cache.keyExps[key] = FutureFunc(duration, func() {
-			// Delete the key when TTL expires
-			// Log errors but don't fail - TTL cleanup is best-effort
-			if err := cache.Delete(ctx, key); err != nil {
-				log.WithError(err).With("key", key).Warn("failed to delete expired key during restore")
-			}
-		})
+		// Use the normal TTL path so the expiration worker (which holds the
+		// cache lock) performs the delete.
+		if err := cache.SetKeyTTL(context.Background(), key, duration); err != nil {
+			log.WithError(err).With("key", key).Warn("failed to restore key expiration")
+		}
 	}
 
 	// Set the triggers
