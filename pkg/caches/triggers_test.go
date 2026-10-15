@@ -300,3 +300,24 @@ func TestExtractWildcardMatches(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteTrigger_RemovesEmptyPattern(t *testing.T) {
+	ctx := context.Background()
+	cache := New()
+	defer cache.Close()
+
+	cache.Acquire("test")
+	defer cache.Release("test")
+
+	id1, err := cache.CreateTrigger(ctx, "a/*", NOOP())
+	assert.NoError(t, err)
+	id2, err := cache.CreateTrigger(ctx, "a/*", NOOP())
+	assert.NoError(t, err)
+
+	assert.NoError(t, cache.DeleteTrigger(ctx, id1))
+	assert.Len(t, cache.triggers["a/*"], 1)
+
+	assert.NoError(t, cache.DeleteTrigger(ctx, id2))
+	_, exists := cache.triggers["a/*"]
+	assert.False(t, exists, "empty trigger pattern should be removed")
+}
