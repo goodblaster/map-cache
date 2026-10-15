@@ -41,6 +41,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        "409":
+          description: Cache already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         "500":
           description: Internal server error
           content:
@@ -90,6 +96,12 @@ paths:
           description: No Content
         "400":
           description: Invalid request or bad payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: Cache not found
           content:
             application/json:
               schema:

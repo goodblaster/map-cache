@@ -137,3 +137,22 @@ func TestHandleUpdateCache_DefaultCache(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, http.StatusBadRequest, he.Code)
 }
+
+func TestHandleUpdateCache_NotFound(t *testing.T) {
+	e := echo.New()
+
+	for _, body := range []string{`{"ttl": 5000}`, `{}`} {
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/caches/missing-update-cache", strings.NewReader(body))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetParamNames("name")
+		c.SetParamValues("missing-update-cache")
+
+		err := handleUpdateCache()(c)
+		he, ok := err.(*echo.HTTPError)
+		if assert.True(t, ok, "body %s", body) {
+			assert.Equal(t, http.StatusNotFound, he.Code, "body %s", body)
+		}
+	}
+}
