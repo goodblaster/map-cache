@@ -42,7 +42,7 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 		exp := time.Unix(*backup.Expiration, 0)
 		ms := time.Until(exp).Milliseconds()
 		cache.exp = FutureFunc(ms, func() {
-			caches.Delete(cacheName)
+			removeCache(cacheName, cache)
 		})
 		cache.expMillis = &ms
 	}
@@ -78,12 +78,9 @@ func Restore(ctx context.Context, cacheName string, inFile string) error {
 		}
 	}
 
-	// Delete the existing cache if it exists, and its expirations.
-	// Log errors but don't fail - deletion is best-effort before restore
-	if err := DeleteCache(cacheName); err != nil {
-		log.WithError(err).With("cache", cacheName).Warn("failed to delete existing cache before restore")
+	// Swap in the restored cache, then shut down the one it replaced (if any).
+	if old, loaded := caches.Swap(cacheName, cache); loaded {
+		old.(*Cache).Close()
 	}
-
-	caches.Store(cacheName, cache)
 	return nil
 }

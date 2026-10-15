@@ -26,6 +26,7 @@ type Cache struct {
 	expirationChan chan expiredKey // channel for expired keys
 	expirationStop chan struct{}   // signal to stop expiration worker
 	expirationWg   sync.WaitGroup  // wait for worker to finish
+	closeOnce      sync.Once       // Close is idempotent
 }
 
 func New() *Cache {
@@ -126,21 +127,28 @@ func (cache *Cache) OperationStatsSnapshot() OperationStatsSnapshot {
 }
 
 // Close shuts down the cache and its background workers.
-// This should be called when the cache is no longer needed.
+// This should be called when the cache is no longer needed. It is safe to call
+// more than once. The caller must not hold the cache lock.
 func (cache *Cache) Close() {
-	// Signal expiration worker to stop
-	close(cache.expirationStop)
+	cache.closeOnce.Do(func() {
+		// Signal expiration worker to stop
+		close(cache.expirationStop)
 
-	// Wait for worker to finish processing
-	cache.expirationWg.Wait()
+		// Wait for worker to finish processing (it acquires the lock itself)
+		cache.expirationWg.Wait()
 
-	// Stop all TTL timers
-	for _, timer := range cache.keyExps {
-		timer.Stop()
-	}
+		tag := "cache-close"
+		cache.Acquire(tag)
+		defer cache.Release(tag)
 
-	// Stop cache-level expiration timer if set
-	if cache.exp != nil {
-		cache.exp.Stop()
-	}
+		// Stop all TTL timers
+		for _, timer := range cache.keyExps {
+			timer.Stop()
+		}
+
+		// Stop cache-level expiration timer if set
+		if cache.exp != nil {
+			cache.exp.Stop()
+		}
+	})
 }

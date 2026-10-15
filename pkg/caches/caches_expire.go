@@ -17,12 +17,16 @@ func SetCacheTTL(name string, milliseconds int64) error {
 		return err
 	}
 
+	tag := "set-cache-ttl"
+	cache.Acquire(tag)
+	defer cache.Release(tag)
+
 	if cache.exp != nil {
 		cache.exp.Stop()
 	}
 
 	cache.exp = FutureFunc(milliseconds, func() {
-		caches.Delete(name)
+		removeCache(name, cache)
 	})
 	cache.expMillis = &milliseconds
 
@@ -39,6 +43,10 @@ func CancelCacheExpiration(name string) error {
 	if err != nil {
 		return err
 	}
+
+	tag := "cancel-cache-ttl"
+	cache.Acquire(tag)
+	defer cache.Release(tag)
 
 	if cache.exp != nil {
 		cache.exp.Stop()
