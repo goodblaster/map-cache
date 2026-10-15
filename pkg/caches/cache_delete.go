@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/goodblaster/map-cache/internal/config"
 	"github.com/goodblaster/map-cache/internal/log"
 )
 
@@ -33,9 +34,10 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 			}
 		}
 
-		// Clear any TTLs that start with this key.
+		// Clear any TTLs for this key or keys nested beneath it.
+		prefix := key + config.KeyDelimiter
 		for k, timer := range cache.keyExps {
-			if strings.HasPrefix(k, key) {
+			if k == key || strings.HasPrefix(k, prefix) {
 				timer.Stop()
 				delete(cache.keyExps, k)
 			}

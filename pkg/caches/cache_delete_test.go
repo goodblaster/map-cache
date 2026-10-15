@@ -63,3 +63,33 @@ func TestCache_Delete_NumericKeyInObject(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []any{"a", "c"}, val)
 }
+
+func TestCache_Delete_KeepsTTLOnPrefixSibling(t *testing.T) {
+	cache := New()
+	defer cache.Close()
+	ctx := context.Background()
+
+	cache.Acquire("test")
+	err := cache.Create(ctx, map[string]any{
+		"user1":  "a",
+		"user10": "b",
+		"user1x": map[string]any{"child": "c"},
+		"parent": map[string]any{"child": "d"},
+	})
+	assert.NoError(t, err)
+	assert.NoError(t, cache.SetKeyTTL(ctx, "user10", 60_000))
+	assert.NoError(t, cache.SetKeyTTL(ctx, "user1x/child", 60_000))
+	assert.NoError(t, cache.SetKeyTTL(ctx, "parent/child", 60_000))
+
+	assert.NoError(t, cache.Delete(ctx, "user1"))
+	assert.NoError(t, cache.Delete(ctx, "parent"))
+
+	_, has10 := cache.keyExps["user10"]
+	_, has1x := cache.keyExps["user1x/child"]
+	_, hasChild := cache.keyExps["parent/child"]
+	cache.Release("test")
+
+	assert.True(t, has10, "deleting user1 must not cancel TTL on user10")
+	assert.True(t, has1x, "deleting user1 must not cancel TTL on user1x/child")
+	assert.False(t, hasChild, "deleting parent must cancel TTL on parent/child")
+}
