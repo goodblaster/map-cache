@@ -53,22 +53,19 @@ func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newV
 	// Increment depth for nested trigger executions
 	ctx = context.WithValue(ctx, triggerDepthContextKey, depth+1)
 	for triggerKey, triggers := range cache.triggers {
-		matchingKeys := cache.KeysMatch(ctx, triggerKey, key)
+		// Match the changed key against the trigger pattern segment by segment.
+		// This avoids walking the cache data for every write.
+		vars, err := ExtractWildcardMatches(key, triggerKey)
+		if err != nil {
+			continue
+		}
 
-		// Full list might be used later. For now, accept any match.
-		if len(matchingKeys) > 0 {
-			vars, err := ExtractWildcardMatches(key, triggerKey)
-			if err != nil {
-				return errors.Wrapf(err, "failed to extract wildcard matches for key %s", key)
-			}
-
-			for _, trigger := range triggers {
-				cmdCtx := context.WithValue(ctx, triggerVarsContextKey, vars)
-				cmdCtx = context.WithValue(cmdCtx, triggerOldValueContextKey, oldValue)
-				cmdCtx = context.WithValue(cmdCtx, triggerNewValueContextKey, newValue)
-				if res := trigger.Command.Do(cmdCtx, cache); res.Error != nil {
-					return errors.Wrap(res.Error, "trigger failed")
-				}
+		for _, trigger := range triggers {
+			cmdCtx := context.WithValue(ctx, triggerVarsContextKey, vars)
+			cmdCtx = context.WithValue(cmdCtx, triggerOldValueContextKey, oldValue)
+			cmdCtx = context.WithValue(cmdCtx, triggerNewValueContextKey, newValue)
+			if res := trigger.Command.Do(cmdCtx, cache); res.Error != nil {
+				return errors.Wrap(res.Error, "trigger failed")
 			}
 		}
 	}
@@ -76,23 +73,13 @@ func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newV
 	return nil
 }
 
+// KeysMatch returns []string{dataKey} if dataKey matches the trigger pattern
+// triggerKey, or nil otherwise.
 func (cache *Cache) KeysMatch(ctx context.Context, triggerKey, dataKey string) []string {
-	if !strings.Contains(triggerKey, "*") {
-		if triggerKey == dataKey {
-			return []string{dataKey}
-		}
+	if _, err := ExtractWildcardMatches(dataKey, triggerKey); err != nil {
 		return nil
 	}
-
-	var keys []string
-	wildKeys := cache.cmap.WildKeys(ctx, triggerKey)
-	for _, wildKey := range wildKeys {
-		if wildKey == dataKey {
-			keys = append(keys, wildKey)
-		}
-	}
-
-	return keys
+	return []string{dataKey}
 }
 
 // ExtractWildcardMatches returns values that match wildcards in triggerKey.
