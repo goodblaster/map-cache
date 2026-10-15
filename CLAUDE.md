@@ -150,7 +150,7 @@ The service is configured via environment variables:
 **Architecture Overview**
 - RESP server runs in parallel with HTTP server, sharing the same cache layer
 - Implements RESP2 protocol using `github.com/tidwall/resp` library
-- Supports **62 core Redis commands** across strings, hashes, lists, keys, and generic operations
+- Supports **71 Redis commands** across strings, hashes, lists, keys, and generic operations
 - Enabled via `RESP_ENABLED=true` environment variable (default port: 6379)
 
 **Package Structure**
@@ -159,11 +159,11 @@ The service is configured via environment variables:
 - `session.go`: Per-connection state (selected cache, connection ID)
 - `mapper.go`: Key translation utilities (Redis `:` ↔ map-cache `/`)
 - `commands_*.go`: Command handlers organized by category:
-  - `commands_string.go`: 20 string commands (GET, SET, INCR, GETRANGE, etc.)
-  - `commands_hash.go`: 13 hash commands (HGET, HSET, HINCRBY, etc.)
-  - `commands_list.go`: 12 list commands (LPUSH, RPUSH, LTRIM, LPOS, etc.)
-  - `commands_key.go`: 11 key commands (EXPIRE, TTL, RENAME, TYPE, etc.)
-  - `commands_generic.go`: 6 generic commands (PING, ECHO, SELECT, etc.)
+  - `commands_string.go`: 21 string commands (GET, SET, INCR, GETRANGE, etc.)
+  - `commands_hash.go`: 14 hash commands (HGET, HSET, HINCRBY, etc.)
+  - `commands_list.go`: 14 list commands (LPUSH, RPUSH, LTRIM, LPOS, etc.)
+  - `commands_key.go`: 14 key commands (EXPIRE, TTL, RENAME, TYPE, etc.)
+  - `handler.go`: 8 generic commands (PING, ECHO, SELECT, FLUSHDB, etc.) plus the dispatcher
 
 **Command Handler Pattern**
 ```go
@@ -233,7 +233,7 @@ func HandleCommandName(s *Session, args []respProto.Value) error {
   2. Cleans up test keys via `cleanupKeys()` helper
   3. Executes command operations
   4. Validates responses using `testify/assert`
-- All 62 commands have test coverage
+- In-package tests (`internal/resp/*_test.go`) start the server on a random port; no external server needed
 
 **Performance Characteristics**
 - Binary RESP protocol ~3-10x faster than HTTP/JSON
@@ -423,8 +423,9 @@ Each TCP connection has a `Session` struct that tracks:
 - Connection ID (for lock tagging)
 - Selected cache name (default: "default")
 - RESP reader/writer (tidwall/resp connection wrapper)
-- Context for cancellation
-- MULTI mode state (for transaction queuing)
+- Context for cancellation (derived from the server context; connections are closed on shutdown)
+
+MULTI/EXEC/DISCARD are not supported.
 
 ### Testing
 
@@ -437,17 +438,17 @@ RESP commands are tested with the official `go-redis` client library:
 - `test_select_caches.go`: Multi-cache isolation
 - `test_integration.go`: Comprehensive end-to-end test
 
-### Implemented Commands (45 total)
+### Implemented Commands (71 total)
 
-**String (15)**: GET, SET, DEL, EXISTS, INCR, DECR, INCRBY, DECRBY, MGET, MSET, GETSET, SETNX, SETEX, STRLEN, APPEND
+**String (21)**: GET, SET, DEL, EXISTS, INCR, DECR, INCRBY, DECRBY, MGET, MSET, GETSET, SETNX, SETEX, PSETEX, STRLEN, APPEND, GETRANGE, SETRANGE, GETEX, GETDEL, INCRBYFLOAT
 
-**Key (6)**: EXPIRE, PEXPIRE, PERSIST, TTL, PTTL, KEYS
+**Key (14)**: EXPIRE, PEXPIRE, PERSIST, TTL, PTTL, EXPIRETIME, PEXPIRETIME, KEYS, EXPIREAT, PEXPIREAT, RENAME, RENAMENX, TYPE, COPY
 
-**Hash (10)**: HGET, HSET, HGETALL, HDEL, HEXISTS, HLEN, HKEYS, HVALS, HMGET, HMSET
+**Hash (14)**: HGET, HSET, HGETALL, HDEL, HEXISTS, HLEN, HKEYS, HVALS, HMGET, HMSET, HINCRBY, HINCRBYFLOAT, HSETNX, HRANDFIELD
 
-**List (8)**: LPUSH, RPUSH, LPOP, RPOP, LLEN, LRANGE, LINDEX, LSET
+**List (14)**: LPUSH, RPUSH, LPUSHX, RPUSHX, LPOP, RPOP, LLEN, LRANGE, LINDEX, LSET, LTRIM, LINSERT, LREM, LPOS
 
-**Generic (6)**: PING, ECHO, SELECT, COMMAND, HELLO, CLIENT
+**Generic (8)**: PING, ECHO, SELECT, COMMAND, HELLO, CLIENT, FLUSHDB, FLUSHALL (FLUSHALL only flushes the selected cache)
 
 See [REDIS.md](./REDIS.md) for complete documentation on Redis protocol support, including usage examples, limitations, and migration guide.
 
