@@ -321,3 +321,29 @@ func TestDeleteTrigger_RemovesEmptyPattern(t *testing.T) {
 	_, exists := cache.triggers["a/*"]
 	assert.False(t, exists, "empty trigger pattern should be removed")
 }
+
+func TestReplaceTrigger_ChangesPattern(t *testing.T) {
+	ctx := context.Background()
+	cache := New()
+	defer cache.Close()
+
+	cache.Acquire("test")
+	defer cache.Release("test")
+
+	assert.NoError(t, cache.Create(ctx, map[string]any{"old": 0, "new": 0, "fired": 0}))
+	id, err := cache.CreateTrigger(ctx, "old", NOOP())
+	assert.NoError(t, err)
+
+	assert.NoError(t, cache.ReplaceTrigger(ctx, id, Trigger{Id: id, Key: "new", Command: INC("fired", 1)}))
+
+	assert.NoError(t, cache.Replace(ctx, "old", 1))
+	fired, _ := cache.Get(ctx, "fired")
+	assert.EqualValues(t, 0, fired, "trigger should no longer fire on old key")
+
+	assert.NoError(t, cache.Replace(ctx, "new", 1))
+	fired, _ = cache.Get(ctx, "fired")
+	assert.EqualValues(t, 1, fired, "trigger should fire on new key")
+
+	_, oldExists := cache.triggers["old"]
+	assert.False(t, oldExists)
+}
