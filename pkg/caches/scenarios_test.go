@@ -17,6 +17,10 @@ func TestScenario_SessionManagement(t *testing.T) {
 	cache := New()
 	defer cache.Close()
 
+	// Hold the lock like real callers do; release it while the expiration worker runs.
+	cache.Acquire("test")
+	defer cache.Release("test")
+
 	// Create a user session with nested data
 	sessionID := "sess_abc123"
 	err := cache.Create(ctx, map[string]any{
@@ -47,7 +51,9 @@ func TestScenario_SessionManagement(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for expiration AND batch processing (100ms ticker + margin)
+	cache.Release("test")
 	time.Sleep(200 * time.Millisecond)
+	cache.Acquire("test")
 
 	// Session should be auto-deleted
 	_, err = cache.Get(ctx, sessionID)
@@ -117,6 +123,10 @@ func TestScenario_RateLimiting(t *testing.T) {
 	cache := New()
 	defer cache.Close()
 
+	// Hold the lock like real callers do; release it while the expiration worker runs.
+	cache.Acquire("test")
+	defer cache.Release("test")
+
 	userID := "user_123"
 	apiKey := "rate_limit/" + userID
 
@@ -157,7 +167,9 @@ func TestScenario_RateLimiting(t *testing.T) {
 	assert.Equal(t, float64(5), count)
 
 	// Wait for expiration AND batch processing (100ms ticker + margin)
+	cache.Release("test")
 	time.Sleep(200 * time.Millisecond)
+	cache.Acquire("test")
 
 	// Rate limit should be reset
 	_, err = cache.Get(ctx, apiKey)
@@ -355,6 +367,10 @@ func TestScenario_PresenceTracking(t *testing.T) {
 	cache := New()
 	defer cache.Close()
 
+	// Hold the lock like real callers do; release it while the expiration worker runs.
+	cache.Acquire("test")
+	defer cache.Release("test")
+
 	// Initialize online users
 	err := cache.Create(ctx, map[string]any{
 		"online": map[string]any{
@@ -392,7 +408,9 @@ func TestScenario_PresenceTracking(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for expiration AND batch processing (100ms ticker + margin)
+	cache.Release("test")
 	time.Sleep(200 * time.Millisecond)
+	cache.Acquire("test")
 
 	// Only user_101 should remain
 	_, err = cache.Get(ctx, "online/user_100")
@@ -565,6 +583,10 @@ func TestScenario_DistributedLock(t *testing.T) {
 	cache := New()
 	defer cache.Close()
 
+	// Hold the lock like real callers do; release it while the expiration worker runs.
+	cache.Acquire("test")
+	defer cache.Release("test")
+
 	lockKey := "locks/critical_section"
 	processID := "process_abc"
 
@@ -613,7 +635,9 @@ func TestScenario_DistributedLock(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for expiration AND batch processing (100ms ticker + margin)
+	cache.Release("test")
 	time.Sleep(200 * time.Millisecond)
+	cache.Acquire("test")
 
 	// Lock should be released
 	_, err = cache.Get(ctx, lockKey)

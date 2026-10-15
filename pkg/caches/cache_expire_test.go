@@ -14,6 +14,10 @@ func TestSetKeyExpiration(t *testing.T) {
 	cache := New()
 	defer cache.Close()
 
+	// Hold the lock like real callers do; release it while the expiration worker runs.
+	cache.Acquire("test")
+	defer cache.Release("test")
+
 	err := cache.Create(ctx, map[string]any{
 		"test": "value",
 	})
@@ -28,7 +32,9 @@ func TestSetKeyExpiration(t *testing.T) {
 	err = cache.SetKeyTTL(ctx, "test", 1)
 
 	// Sleep long enough for expiration AND batch processing (100ms ticker + margin)
+	cache.Release("test")
 	time.Sleep(time.Millisecond * 150)
+	cache.Acquire("test")
 
 	// Check if the cache is expired
 	_, err = cache.Get(ctx, "test")
@@ -39,6 +45,10 @@ func TestSetKeyExpirationNested(t *testing.T) {
 	ctx := context.Background()
 	cache := New()
 	defer cache.Close()
+
+	// Hold the lock like real callers do; release it while the expiration worker runs.
+	cache.Acquire("test")
+	defer cache.Release("test")
 
 	err := cache.Create(ctx, map[string]any{
 		"test": map[string]any{
@@ -56,7 +66,9 @@ func TestSetKeyExpirationNested(t *testing.T) {
 	err = cache.SetKeyTTL(ctx, "test/nested", 1)
 
 	// Sleep long enough for expiration AND batch processing (100ms ticker + margin)
+	cache.Release("test")
 	time.Sleep(time.Millisecond * 150)
+	cache.Acquire("test")
 
 	// test should still be there
 	_, err = cache.Get(ctx, "test")
@@ -72,6 +84,10 @@ func TestKeyExpirationChange(t *testing.T) {
 	cache := New()
 	defer cache.Close()
 
+	// Hold the lock like real callers do; release it while the expiration worker runs.
+	cache.Acquire("test")
+	defer cache.Release("test")
+
 	err := cache.Create(ctx, map[string]any{
 		"test": "value",
 	})
@@ -86,7 +102,9 @@ func TestKeyExpirationChange(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Sleep long enough for expiration AND batch processing (100ms ticker + margin)
+	cache.Release("test")
 	time.Sleep(time.Millisecond * 150)
+	cache.Acquire("test")
 
 	// Check if the cache is expired
 	_, err = cache.Get(ctx, "test")
