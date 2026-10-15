@@ -56,3 +56,21 @@ func TestShutdown_WithIdleClient(t *testing.T) {
 	require.Less(t, time.Since(start), time.Second)
 	require.Equal(t, 0, srv.ActiveConnections())
 }
+
+func TestFlushDB_ClearsKeysAndTTLs(t *testing.T) {
+	_, client := startTestServer(t)
+	ctx := context.Background()
+
+	require.NoError(t, client.Set(ctx, "a", "1", time.Minute).Err())
+	require.NoError(t, client.HSet(ctx, "h", "f", "v").Err())
+	require.NoError(t, client.FlushDB(ctx).Err())
+
+	n, err := client.Exists(ctx, "a", "h").Result()
+	require.NoError(t, err)
+	require.Zero(t, n)
+
+	require.NoError(t, client.Set(ctx, "a", "2", 0).Err())
+	ttl, err := client.TTL(ctx, "a").Result()
+	require.NoError(t, err)
+	require.Equal(t, time.Duration(-1), ttl)
+}

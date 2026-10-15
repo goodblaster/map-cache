@@ -1,10 +1,8 @@
 package resp
 
 import (
-	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/goodblaster/map-cache/internal/config"
 	"github.com/goodblaster/map-cache/pkg/caches"
@@ -189,16 +187,7 @@ func handleFlushDB(s *Session, args []resp.Value) error {
 	cache.Acquire(tag)
 	defer cache.Release(tag)
 
-	ctx, cancel := context.WithTimeout(s.Context(), 30*time.Second)
-	defer cancel()
-
-	// Get all keys using wildcard pattern
-	keys := cache.WildKeys(ctx, "*")
-
-	// Delete each key
-	for _, key := range keys {
-		cache.Delete(ctx, key)
-	}
+	cache.Clear()
 
 	return s.WriteOK()
 }

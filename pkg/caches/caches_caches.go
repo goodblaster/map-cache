@@ -82,7 +82,15 @@ func (cache *Cache) Release(tag string) {
 	cache.mutex.Unlock()
 }
 
-// Clear - Clear the cache. Must already be acquired.
+// Clear - Clear all data and key TTLs from the cache. Triggers are kept.
+// Must already be acquired.
 func (cache *Cache) Clear() {
+	cache.recordActivity()
 	cache.cmap = containers.NewGabsMap()
+
+	// Stop key timers so they can't delete keys created after the clear.
+	for _, timer := range cache.keyExps {
+		timer.Stop()
+	}
+	cache.keyExps = map[string]*Timer{}
 }

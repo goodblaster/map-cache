@@ -176,3 +176,27 @@ func TestKeyTTL_ExpirationOverflow(t *testing.T) {
 		return len(cache.cmap.Data(ctx)) == 0 && len(cache.keyExps) == 0
 	}, 5*time.Second, 50*time.Millisecond)
 }
+
+// Clearing the cache must stop key timers so they can't delete a key with the
+// same name created afterwards.
+func TestClear_StopsKeyTimers(t *testing.T) {
+	ctx := context.Background()
+	cache := New()
+	defer cache.Close()
+
+	cache.Acquire("test")
+	assert.NoError(t, cache.Create(ctx, map[string]any{"k": "old"}))
+	assert.NoError(t, cache.SetKeyTTL(ctx, "k", 50))
+	cache.Clear()
+	assert.NoError(t, cache.Create(ctx, map[string]any{"k": "new"}))
+	cache.Release("test")
+
+	time.Sleep(250 * time.Millisecond)
+
+	cache.Acquire("test")
+	defer cache.Release("test")
+	val, err := cache.Get(ctx, "k")
+	assert.NoError(t, err)
+	assert.Equal(t, "new", val)
+	assert.Empty(t, cache.keyExps)
+}
