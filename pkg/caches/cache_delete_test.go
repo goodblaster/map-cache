@@ -35,3 +35,31 @@ func TestCache_Delete(t *testing.T) {
 	err = cache.Delete(ctx, "nonExistentKey")
 	assert.NoError(t, err)
 }
+
+func TestCache_Delete_NumericKeyInObject(t *testing.T) {
+	cache := New()
+	defer cache.Close()
+	ctx := context.Background()
+
+	err := cache.Create(ctx, map[string]any{
+		"users": map[string]any{
+			"123": map[string]any{"name": "alice"},
+			"456": map[string]any{"name": "bob"},
+		},
+		"list": []any{"a", "b", "c"},
+	})
+	assert.NoError(t, err)
+
+	// Numeric segment under an object is a map key, not an array index.
+	assert.NoError(t, cache.Delete(ctx, "users/123"))
+	_, err = cache.Get(ctx, "users/123")
+	assert.Error(t, err)
+	_, err = cache.Get(ctx, "users/456")
+	assert.NoError(t, err)
+
+	// Numeric segment under an array still removes the element.
+	assert.NoError(t, cache.Delete(ctx, "list/1"))
+	val, err := cache.Get(ctx, "list")
+	assert.NoError(t, err)
+	assert.Equal(t, []any{"a", "c"}, val)
+}
