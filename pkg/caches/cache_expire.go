@@ -107,17 +107,13 @@ func (cache *Cache) SetKeyTTL(ctx context.Context, key string, milliseconds int6
 	// Create a new timer that sends the key to the expiration channel.
 	// The expiration worker will handle the actual deletion in batches.
 	cache.keyExps[key] = futureTimer(milliseconds, func(t *Timer) {
-		// Send key to expiration channel (non-blocking)
+		// The worker is the only goroutine that touches cache state for
+		// expirations, so this callback must never modify the cache itself.
+		// If the buffer is full, block until the worker catches up (or the
+		// cache is closed).
 		select {
 		case cache.expirationChan <- expiredKey{key: key, timer: t}:
-			// Key sent successfully
-		default:
-			// Channel full - delete directly as fallback
-			// This should be rare with a 1000-key buffer
-			if err := cache.Delete(ctx, key); err != nil {
-				log.WithError(err).With("key", key).Warn("failed to delete expired key (channel full)")
-			}
-			delete(cache.keyExps, key)
+		case <-cache.expirationStop:
 		}
 	})
 

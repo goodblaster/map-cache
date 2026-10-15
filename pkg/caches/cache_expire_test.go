@@ -2,6 +2,7 @@ package caches
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -151,4 +152,27 @@ func TestKeyTTL_ResetAfterTimerFired(t *testing.T) {
 			assert.NoError(t, err, "key should survive")
 		})
 	}
+}
+
+// More keys expiring at once than the expiration channel can buffer must all be
+// deleted by the worker (run with -race to catch unlocked fallback deletes).
+func TestKeyTTL_ExpirationOverflow(t *testing.T) {
+	ctx := context.Background()
+	cache := New()
+	defer cache.Close()
+
+	const n = 3000 // > expirationChan buffer (1000)
+	cache.Acquire("test")
+	for i := 0; i < n; i++ {
+		key := "k" + strconv.Itoa(i)
+		assert.NoError(t, cache.Create(ctx, map[string]any{key: i}))
+		assert.NoError(t, cache.SetKeyTTL(ctx, key, 1))
+	}
+	cache.Release("test")
+
+	assert.Eventually(t, func() bool {
+		cache.Acquire("test")
+		defer cache.Release("test")
+		return len(cache.cmap.Data(ctx)) == 0 && len(cache.keyExps) == 0
+	}, 5*time.Second, 50*time.Millisecond)
 }
