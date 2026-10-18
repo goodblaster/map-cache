@@ -184,11 +184,8 @@ func HandleTTL(s *Session, args []respProto.Value) error {
 		return s.WriteValue(Integer(-1))
 	}
 
-	// Calculate remaining TTL in seconds
-	remainingSeconds := timer.Expiration - time.Now().Unix()
-	if remainingSeconds < 0 {
-		remainingSeconds = 0
-	}
+	// Remaining TTL in seconds, rounded like Redis
+	remainingSeconds := (timer.Remaining().Milliseconds() + 500) / 1000
 
 	return s.WriteValue(Integer(int(remainingSeconds)))
 }
@@ -229,13 +226,8 @@ func HandlePTTL(s *Session, args []respProto.Value) error {
 		return s.WriteValue(Integer(-1))
 	}
 
-	// Calculate remaining TTL in milliseconds
-	remainingMs := (timer.Expiration - time.Now().Unix()) * 1000
-	if remainingMs < 0 {
-		remainingMs = 0
-	}
-
-	return s.WriteValue(Integer(int(remainingMs)))
+	// Remaining TTL in milliseconds
+	return s.WriteValue(Integer(int(timer.Remaining().Milliseconds())))
 }
 
 // HandleExpireTime implements the EXPIRETIME command (get expiration timestamp in seconds)
@@ -315,7 +307,7 @@ func HandlePExpireTime(s *Session, args []respProto.Value) error {
 	}
 
 	// Return absolute expiration timestamp in milliseconds
-	return s.WriteValue(Integer(int(timer.Expiration * 1000)))
+	return s.WriteValue(Integer(int(timer.ExpiresAt.UnixMilli())))
 }
 
 // HandleKeys implements the KEYS command (pattern matching)
@@ -497,7 +489,7 @@ func HandleRename(s *Session, args []respProto.Value) error {
 	// Copy TTL if it exists
 	keyExps := cache.KeyExpirations()
 	if timer, hasTTL := keyExps[oldKey]; hasTTL {
-		remainingMs := (timer.Expiration - time.Now().Unix()) * 1000
+		remainingMs := timer.Remaining().Milliseconds()
 		if remainingMs > 0 {
 			cache.SetKeyTTL(ctx, newKey, remainingMs)
 		}
@@ -553,7 +545,7 @@ func HandleRenameNX(s *Session, args []respProto.Value) error {
 	// Copy TTL if it exists
 	keyExps := cache.KeyExpirations()
 	if timer, hasTTL := keyExps[oldKey]; hasTTL {
-		remainingMs := (timer.Expiration - time.Now().Unix()) * 1000
+		remainingMs := timer.Remaining().Milliseconds()
 		if remainingMs > 0 {
 			cache.SetKeyTTL(ctx, newKey, remainingMs)
 		}
@@ -667,7 +659,7 @@ func HandleCopy(s *Session, args []respProto.Value) error {
 	// Copy TTL if source has one
 	keyExps := cache.KeyExpirations()
 	if timer, hasTTL := keyExps[sourceKey]; hasTTL {
-		remainingMs := (timer.Expiration - time.Now().Unix()) * 1000
+		remainingMs := timer.Remaining().Milliseconds()
 		if remainingMs > 0 {
 			cache.SetKeyTTL(ctx, destKey, remainingMs)
 		}

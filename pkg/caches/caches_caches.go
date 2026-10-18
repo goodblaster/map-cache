@@ -20,13 +20,11 @@ func List() []string {
 }
 
 func AddCache(name string) error {
-	_, exists := caches.Load(name)
-	if exists {
+	cache := New()
+	if _, loaded := caches.LoadOrStore(name, cache); loaded {
+		cache.Close()
 		return ErrCacheAlreadyExists
 	}
-
-	cache := New()
-	caches.Store(name, cache)
 	return nil
 }
 
@@ -41,27 +39,25 @@ func FetchCache(name string) (*Cache, error) {
 	return cache, nil
 }
 
-// DeleteCache - delete the cache.
+// DeleteCache - delete the cache and stop its timers and background worker.
+// The caller must not hold the cache lock.
 func DeleteCache(name string) error {
 	val, exists := caches.Load(name)
 	if !exists {
-		return ErrKeyNotFound.Format(name)
+		return ErrCacheNotFound
 	}
 
-	cache := val.(*Cache)
-
-	// Clear TTL timers for all keys.
-	for _, timer := range cache.keyExps {
-		timer.Stop()
-	}
-
-	// And the cache ttl
-	if cache.exp != nil {
-		cache.exp.Stop()
-	}
-
-	caches.Delete(name)
+	removeCache(name, val.(*Cache))
 	return nil
+}
+
+// removeCache unregisters cache and shuts it down, but only if it is still the
+// cache registered under name. This keeps a stale expiration timer from
+// removing a newer cache that was created (or restored) with the same name.
+func removeCache(name string, cache *Cache) {
+	if caches.CompareAndDelete(name, cache) {
+		cache.Close()
+	}
 }
 
 // Acquire - Acquire the cache if you already have a reference to it.
@@ -86,7 +82,15 @@ func (cache *Cache) Release(tag string) {
 	cache.mutex.Unlock()
 }
 
-// Clear - Clear the cache. Must already be acquired.
+// Clear - Clear all data and key TTLs from the cache. Triggers are kept.
+// Must already be acquired.
 func (cache *Cache) Clear() {
+	cache.recordActivity()
 	cache.cmap = containers.NewGabsMap()
+
+	// Stop key timers so they can't delete keys created after the clear.
+	for _, timer := range cache.keyExps {
+		timer.Stop()
+	}
+	cache.keyExps = map[string]*Timer{}
 }

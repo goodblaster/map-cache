@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/goodblaster/map-cache/internal/config"
 	"github.com/goodblaster/map-cache/internal/log"
 )
 
@@ -14,22 +15,29 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 	for _, key := range keys {
 		path := SplitKey(key)
 
-		// If the last value of the key is a number, assume it is an array element.
-		// We need to handle those differently.
+		// If the last segment is a number and the parent is an array, it is an
+		// array element and must be handled differently. Numeric keys inside
+		// objects (e.g. users/123) fall through to a normal delete.
 		if len(path) > 1 {
 			lastStr := path[len(path)-1]
 			if i, err := strconv.Atoi(lastStr); err == nil {
-				if err := cache.cmap.ArrayRemove(ctx, i, path[:len(path)-1]...); err != nil {
-					// Log but don't fail - deletion is best-effort for array elements
-					log.WithError(err).With("key", key).With("index", i).Warn("failed to remove array element")
+				parentPath := path[:len(path)-1]
+				if parent, err := cache.cmap.Get(ctx, parentPath...); err == nil {
+					if _, isArray := parent.([]any); isArray {
+						if err := cache.cmap.ArrayRemove(ctx, i, parentPath...); err != nil {
+							// Log but don't fail - deletion is best-effort for array elements
+							log.WithError(err).With("key", key).With("index", i).Warn("failed to remove array element")
+						}
+						continue
+					}
 				}
-				continue
 			}
 		}
 
-		// Clear any TTLs that start with this key.
+		// Clear any TTLs for this key or keys nested beneath it.
+		prefix := key + config.KeyDelimiter
 		for k, timer := range cache.keyExps {
-			if strings.HasPrefix(k, key) {
+			if k == key || strings.HasPrefix(k, prefix) {
 				timer.Stop()
 				delete(cache.keyExps, k)
 			}

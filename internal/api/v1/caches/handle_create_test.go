@@ -81,7 +81,7 @@ func TestHandleCreateCache(t *testing.T) {
 		assert.Error(t, err)
 		he, ok := err.(*echo.HTTPError)
 		assert.True(t, ok)
-		assert.Equal(t, http.StatusInternalServerError, he.Code)
-		assert.Contains(t, he.Message, "failed to create cache")
+		assert.Equal(t, http.StatusConflict, he.Code)
+		assert.Contains(t, he.Message, "cache already exists")
 	})
 }

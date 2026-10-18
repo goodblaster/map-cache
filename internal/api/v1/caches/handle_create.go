@@ -36,6 +36,9 @@ func handleCreateCache() echo.HandlerFunc {
 		}
 
 		err := caches.AddCache(req.Name)
+		if errors.Is(err, caches.ErrCacheAlreadyExists) {
+			return echo.NewHTTPError(http.StatusConflict, "cache already exists").SetInternal(err)
+		}
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to create cache").SetInternal(err)
 		}

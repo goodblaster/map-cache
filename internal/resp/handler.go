@@ -1,10 +1,8 @@
 package resp
 
 import (
-	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/goodblaster/map-cache/internal/config"
 	"github.com/goodblaster/map-cache/pkg/caches"
@@ -37,14 +35,6 @@ func HandleCommand(s *Session, cmd resp.Value) error {
 	// First element is the command name
 	cmdName := strings.ToUpper(values[0].String())
 	args := values[1:]
-
-	// If in MULTI mode, queue commands (except EXEC, DISCARD, MULTI)
-	if s.multiMode {
-		if cmdName != "EXEC" && cmdName != "DISCARD" && cmdName != "MULTI" {
-			s.multiCmds = append(s.multiCmds, cmd)
-			return s.WriteValue(SimpleString("QUEUED"))
-		}
-	}
 
 	// Look up the handler
 	handler, exists := commandRegistry[cmdName]
@@ -189,16 +179,7 @@ func handleFlushDB(s *Session, args []resp.Value) error {
 	cache.Acquire(tag)
 	defer cache.Release(tag)
 
-	ctx, cancel := context.WithTimeout(s.Context(), 30*time.Second)
-	defer cancel()
-
-	// Get all keys using wildcard pattern
-	keys := cache.WildKeys(ctx, "*")
-
-	// Delete each key
-	for _, key := range keys {
-		cache.Delete(ctx, key)
-	}
+	cache.Clear()
 
 	return s.WriteOK()
 }

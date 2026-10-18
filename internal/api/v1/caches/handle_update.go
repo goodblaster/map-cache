@@ -3,6 +3,7 @@ package caches
 import (
 	"net/http"
 
+	"github.com/goodblaster/errors"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/labstack/echo/v4"
 )
@@ -33,6 +34,9 @@ func handleUpdateCache() echo.HandlerFunc {
 		if input.TTL != nil {
 			// Update the cache expiration
 			err := caches.SetCacheTTL(cacheName, *input.TTL)
+			if errors.Is(err, caches.ErrCacheNotFound) {
+				return echo.NewHTTPError(http.StatusNotFound, "cache not found").SetInternal(err)
+			}
 			if err != nil {
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to update cache").SetInternal(err)
 			}
@@ -42,6 +46,9 @@ func handleUpdateCache() echo.HandlerFunc {
 
 		// If the TTL is nil, we interpret it as a request to remove the TTL
 		err := caches.CancelCacheExpiration(cacheName)
+		if errors.Is(err, caches.ErrCacheNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "cache not found").SetInternal(err)
+		}
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "could not remove cache expiration").SetInternal(err)
 		}
