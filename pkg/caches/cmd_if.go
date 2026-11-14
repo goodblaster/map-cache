@@ -3,18 +3,21 @@ package caches
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/Knetic/govaluate"
 )
 
-// keyIdentifierReplacer is reused for converting keys to identifiers
-var keyIdentifierReplacer = strings.NewReplacer(".", "_", "/", "_", "-", "_")
-
 // exprCache caches compiled expressions to avoid recompiling the same expression
 var exprCache sync.Map // map[string]*govaluate.EvaluableExpression
+
+// maxCachedExpressions bounds exprCache; when exceeded the cache is reset.
+const maxCachedExpressions = 4096
+
+var exprCacheSize atomic.Int64
 
 type CommandIf struct {
 	Condition string  `json:"condition,required"`
@@ -31,52 +34,41 @@ func IF(condition string, ifTrue, ifFalse Command) Command {
 }
 
 func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
-	parameters := map[string]any{}
-	conditionExpr := p.Condition
-
 	// Sub in contextual variables.
-	conditionExpr = substituteContextVars(ctx, conditionExpr)
+	conditionExpr := substituteContextVars(ctx, p.Condition)
+
+	binder := paramBinder{params: map[string]any{}}
 
 	// Handle any(...) or all(...) first
-	conditionExpr, err := expandAnyAll(conditionExpr, cache, parameters, ctx)
-	if err != nil {
-		return CmdResult{Error: err}
+	if strings.Contains(conditionExpr, "any(") || strings.Contains(conditionExpr, "all(") {
+		conditionExpr = expandAnyAll(ctx, conditionExpr, cache, &binder)
 	}
 
 	// Now handle remaining simple ${{...}} references using shared regex
-	matches := InterpolationPattern.FindAllStringSubmatch(conditionExpr, -1)
-	for _, match := range matches {
-		fullMatch := match[0]
-		key := match[1]
-		// TrimSpace only if needed
-		if len(key) > 0 && (key[0] == ' ' || key[len(key)-1] == ' ' || key[0] == '\t') {
-			key = strings.TrimSpace(key)
+	if matches := InterpolationPattern.FindAllStringSubmatchIndex(conditionExpr, -1); len(matches) > 0 {
+		var builder strings.Builder
+		builder.Grow(len(conditionExpr))
+		last := 0
+		for _, match := range matches {
+			key := strings.TrimSpace(conditionExpr[match[2]:match[3]])
+			val, err := cache.Get(ctx, key)
+			if err != nil {
+				val = nil
+			}
+			builder.WriteString(conditionExpr[last:match[0]])
+			builder.WriteString(binder.bind(key, val))
+			last = match[1]
 		}
-
-		val, err := cache.Get(ctx, key)
-		if err != nil {
-			val = nil
-		}
-		varName := keyToIdentifier(key)
-		parameters[varName] = val
-		conditionExpr = strings.ReplaceAll(conditionExpr, fullMatch, varName)
+		builder.WriteString(conditionExpr[last:])
+		conditionExpr = builder.String()
 	}
 
-	// Check cache first
-	var expr *govaluate.EvaluableExpression
-	if cached, ok := exprCache.Load(conditionExpr); ok {
-		expr = cached.(*govaluate.EvaluableExpression)
-	} else {
-		// Compile and cache
-		var err error
-		expr, err = govaluate.NewEvaluableExpression(conditionExpr)
-		if err != nil {
-			return CmdResult{Error: ErrInvalidExpression.Format(err)}
-		}
-		exprCache.Store(conditionExpr, expr)
+	expr, err := compileExpression(conditionExpr)
+	if err != nil {
+		return CmdResult{Error: ErrInvalidExpression.Format(err)}
 	}
 
-	result, err := expr.Evaluate(parameters)
+	result, err := expr.Evaluate(binder.params)
 	if err != nil {
 		return CmdResult{Error: ErrEvaluationError.Format(err)}
 	}
@@ -87,12 +79,72 @@ func (p CommandIf) Do(ctx context.Context, cache *Cache) CmdResult {
 	}
 
 	if isTrue {
+		if p.IfTrue == nil {
+			return CmdResult{}
+		}
 		return p.IfTrue.Do(ctx, cache)
+	}
+	if p.IfFalse == nil {
+		return CmdResult{}
 	}
 	return p.IfFalse.Do(ctx, cache)
 }
 
-func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx context.Context) (string, error) {
+// paramBinder assigns expression parameter names to cache keys. Names are
+// positional (k0, k1, ...) rather than derived from the key, so that:
+//   - the expression text - and therefore its compiled, cached form - is the
+//     same no matter which keys a trigger or loop substituted in;
+//   - keys that are not valid identifiers (e.g. starting with a digit) work;
+//   - distinct keys can never collide (a/b vs a_b).
+type paramBinder struct {
+	params map[string]any
+	keys   []string // keys[i] is bound to parameter name k<i>
+}
+
+func (b *paramBinder) bind(key string, val any) string {
+	// Conditions reference a handful of keys, so a linear scan beats a map.
+	for i, bound := range b.keys {
+		if bound == key {
+			return paramName(i)
+		}
+	}
+	name := paramName(len(b.keys))
+	b.keys = append(b.keys, key)
+	b.params[name] = val
+	return name
+}
+
+var paramNames = [...]string{"k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7"}
+
+func paramName(i int) string {
+	if i < len(paramNames) {
+		return paramNames[i]
+	}
+	return "k" + strconv.Itoa(i)
+}
+
+// compileExpression returns the compiled form of expr, caching the result.
+// The cache is bounded: expressions can embed values substituted from keys, so
+// the set of distinct expressions is not necessarily small.
+func compileExpression(expr string) (*govaluate.EvaluableExpression, error) {
+	if cached, ok := exprCache.Load(expr); ok {
+		return cached.(*govaluate.EvaluableExpression), nil
+	}
+
+	compiled, err := govaluate.NewEvaluableExpression(expr)
+	if err != nil {
+		return nil, err
+	}
+
+	if exprCacheSize.Add(1) > maxCachedExpressions {
+		exprCache.Clear()
+		exprCacheSize.Store(1)
+	}
+	exprCache.Store(expr, compiled)
+	return compiled, nil
+}
+
+func expandAnyAll(ctx context.Context, expr string, cache *Cache, binder *paramBinder) string {
 	// Use shared pre-compiled regex for aggregation functions
 	return AggregationPattern.ReplaceAllStringFunc(expr, func(m string) string {
 		matches := AggregationPattern.FindStringSubmatch(m)
@@ -118,12 +170,11 @@ func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx cont
 
 		builder.WriteByte('(')
 		for i, key := range keys {
-			varName := keyToIdentifier(key)
 			val, err := cache.Get(ctx, key)
 			if err != nil {
 				val = nil
 			}
-			parameters[varName] = val
+			varName := binder.bind(key, val)
 
 			if i > 0 {
 				builder.WriteString(join)
@@ -137,11 +188,7 @@ func expandAnyAll(expr string, cache *Cache, parameters map[string]any, ctx cont
 		builder.WriteByte(')')
 
 		return builder.String()
-	}), nil
-}
-
-func keyToIdentifier(key string) string {
-	return keyIdentifierReplacer.Replace(key)
+	})
 }
 
 func (c *CommandIf) UnmarshalJSON(data []byte) error {
@@ -175,17 +222,17 @@ func (c *CommandIf) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// substituteContextVars replaces ${{1}}, ${{2}}, ... with the wildcard segments
+// captured by the trigger that is currently executing, if any.
 func substituteContextVars(ctx context.Context, expr string) string {
-	val := ctx.Value(triggerVarsContextKey)
-	vars, ok := val.([]string)
+	if !strings.Contains(expr, "${{") {
+		return expr
+	}
+
+	vars, ok := ctx.Value(triggerVarsContextKey).([]string)
 	if !ok {
 		return expr
 	}
 
-	for i := range vars {
-		v := fmt.Sprintf("${{%d}}", i+1)
-		expr = strings.ReplaceAll(expr, v, vars[i])
-	}
-
-	return expr
+	return substituteCaptures(expr, vars)
 }

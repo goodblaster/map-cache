@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime/debug"
 	"sync/atomic"
 
 	"github.com/goodblaster/map-cache/internal/config"
@@ -82,6 +83,23 @@ func (s *Session) Context() context.Context {
 	return s.ctx
 }
 
+// dispatch runs a single command, converting a panic in its handler into an
+// error. Handlers run on per-connection goroutines, so without this one bad
+// command from one client would crash the whole process. Handlers release the
+// cache lock with defer, so the lock is not left held.
+func (s *Session) dispatch(cmd resp.Value) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.With("conn_id", s.connID).
+				With("panic", fmt.Sprint(r)).
+				With("stack", string(debug.Stack())).
+				Error("Panic handling RESP command")
+			err = errors.New("internal error")
+		}
+	}()
+	return HandleCommand(s, cmd)
+}
+
 // Handle processes commands for this session
 func (s *Session) Handle() {
 	defer s.Close()
@@ -103,7 +121,7 @@ func (s *Session) Handle() {
 		}
 
 		// Handle the command
-		if err := HandleCommand(s, cmd); err != nil {
+		if err := s.dispatch(cmd); err != nil {
 			log.WithError(err).
 				With("conn_id", s.connID).
 				With("command", cmd.String()).

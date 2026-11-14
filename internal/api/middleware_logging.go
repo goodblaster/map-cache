@@ -1,6 +1,8 @@
 package api
 
 import (
+	"errors"
+	"net/http"
 	"time"
 
 	"github.com/goodblaster/map-cache/internal/log"
@@ -37,6 +39,15 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		// Get response status (might be set by error handler)
 		status := c.Response().Status
+		if err != nil && !c.Response().Committed {
+			// The error handler has not written the response yet, so take
+			// the status from the error rather than logging a misleading 200.
+			status = http.StatusInternalServerError
+			var httpErr *echo.HTTPError
+			if errors.As(err, &httpErr) {
+				status = httpErr.Code
+			}
+		}
 		if status == 0 {
 			status = 200 // Default status if not set
 		}

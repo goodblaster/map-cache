@@ -35,13 +35,8 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 		}
 
 		// Clear any TTLs for this key or keys nested beneath it.
-		prefix := key + config.KeyDelimiter
-		for k, timer := range cache.keyExps {
-			if k == key || strings.HasPrefix(k, prefix) {
-				timer.Stop()
-				delete(cache.keyExps, k)
-			}
-		}
+		value, err := cache.cmap.Get(ctx, path...)
+		cache.clearKeyTTLs(key, err == nil && isContainer(value))
 
 		// Delete the key - log errors but don't fail (deletion is best-effort)
 		if err := cache.cmap.Delete(ctx, path...); err != nil {
@@ -49,4 +44,39 @@ func (cache *Cache) Delete(ctx context.Context, keys ...string) error {
 		}
 	}
 	return nil
+}
+
+// isContainer reports whether keys can be nested beneath value.
+func isContainer(value any) bool {
+	switch value.(type) {
+	case map[string]any, []any:
+		return true
+	}
+	return false
+}
+
+// clearKeyTTLs stops and forgets the TTL timer for key. If nested is true it
+// also clears timers for keys beneath it, which requires scanning every TTL -
+// callers should only ask for that when key holds an object or array.
+func (cache *Cache) clearKeyTTLs(key string, nested bool) {
+	if len(cache.keyExps) == 0 {
+		return
+	}
+
+	if timer, ok := cache.keyExps[key]; ok {
+		timer.Stop()
+		delete(cache.keyExps, key)
+	}
+
+	if !nested {
+		return
+	}
+
+	prefix := key + config.KeyDelimiter
+	for k, timer := range cache.keyExps {
+		if strings.HasPrefix(k, prefix) {
+			timer.Stop()
+			delete(cache.keyExps, k)
+		}
+	}
 }

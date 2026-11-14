@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Jeffail/gabs/v2"
+	"github.com/goodblaster/map-cache/internal/config"
 )
 
 // GabsMap wraps a Gabs container for JSON-like nested data structures.
@@ -103,55 +104,53 @@ func (gMap *GabsMap) Data(ctx context.Context) map[string]any {
 	return gMap.container.Data().(map[string]any)
 }
 
+// WildKeys returns every existing key that matches path, where a "*" segment
+// matches any single object key or array index. Null values are not matched.
 func (gMap *GabsMap) WildKeys(ctx context.Context, path string) []string {
+	delim := config.KeyDelimiter
+	tokens := strings.Split(path, delim)
 	var results []string
-	tokens := strings.Split(path, "/")
 
-	var walk func(node *gabs.Container, idx int, currentPath []string)
-	walk = func(node *gabs.Container, idx int, currentPath []string) {
-		if node == nil || node.Data() == nil {
+	// Walk the raw data directly. Going through gabs' Path() per segment would
+	// re-split every key on "." (breaking keys that contain dots) and allocate
+	// a container per visited node.
+	var walk func(node any, idx int, currentPath []string)
+	walk = func(node any, idx int, currentPath []string) {
+		if node == nil {
 			return
 		}
 
 		if idx >= len(tokens) {
-			results = append(results, strings.Join(currentPath, "/"))
+			results = append(results, strings.Join(currentPath, delim))
 			return
 		}
 
 		token := tokens[idx]
 
-		if token == "*" {
-			switch data := node.Data().(type) {
-			case map[string]interface{}:
-				for key := range data {
-					child := node.Path(key)
+		switch data := node.(type) {
+		case map[string]any:
+			if token == "*" {
+				for key, child := range data {
 					walk(child, idx+1, append(currentPath, key))
 				}
-			case []interface{}:
-				for i := range data {
-					child := node.Index(i)
-					// Use strconv.Itoa instead of fmt.Sprintf for better performance
-					walk(child, idx+1, append(currentPath, strconv.Itoa(i)))
-				}
-			}
-		} else {
-			// Try map lookup
-			child := node.Path(token)
-			if child != nil && child.Data() != nil {
-				walk(child, idx+1, append(currentPath, token))
 				return
 			}
-
-			// Try array index
-			if i, err := strconv.Atoi(token); err == nil {
-				child := node.Index(i)
-				if child != nil && child.Data() != nil {
-					walk(child, idx+1, append(currentPath, token))
+			if child, ok := data[token]; ok {
+				walk(child, idx+1, append(currentPath, token))
+			}
+		case []any:
+			if token == "*" {
+				for i, child := range data {
+					walk(child, idx+1, append(currentPath, strconv.Itoa(i)))
 				}
+				return
+			}
+			if i, err := strconv.Atoi(token); err == nil && i >= 0 && i < len(data) {
+				walk(data[i], idx+1, append(currentPath, token))
 			}
 		}
 	}
 
-	walk(gMap.container, 0, []string{})
+	walk(gMap.container.Data(), 0, make([]string, 0, len(tokens)))
 	return results
 }

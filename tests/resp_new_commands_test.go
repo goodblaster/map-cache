@@ -656,10 +656,11 @@ func TestRESP_ListCommands_LPUSHX(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(4), length)
 
-	// Verify elements were added to the left
+	// Verify elements were added to the left, one at a time (as Redis does),
+	// so the last value pushed ends up at the head.
 	list, err := client.LRange(ctx, "mylist", 0, -1).Result()
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"x", "y", "a", "b"}, list)
+	assert.Equal(t, []string{"y", "x", "a", "b"}, list)
 }
 
 func TestRESP_ListCommands_RPUSHX(t *testing.T) {

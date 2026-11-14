@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"errors"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -77,8 +79,18 @@ func MetricsMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Calculate duration
 		duration := time.Since(start).Seconds()
 
-		// Get status code
+		// Get status code. When the handler returns an error the response has
+		// not been written yet (the error handler runs after this middleware),
+		// so the status has to come from the error itself - otherwise every
+		// failed request would be counted as a 200.
 		status := c.Response().Status
+		if err != nil && !c.Response().Committed {
+			status = http.StatusInternalServerError
+			var httpErr *echo.HTTPError
+			if errors.As(err, &httpErr) {
+				status = httpErr.Code
+			}
+		}
 		if status == 0 {
 			status = 200 // Default if not set
 		}

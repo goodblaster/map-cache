@@ -68,6 +68,10 @@ func main() {
 
 	e := echo.New()
 
+	// Bound how long a client may take to send request headers, so idle or
+	// deliberately slow connections cannot pile up indefinitely.
+	e.Server.ReadHeaderTimeout = 10 * time.Second
+
 	// Custom error handler - centralized error logging and response formatting
 	e.HTTPErrorHandler = api.CustomErrorHandler
 

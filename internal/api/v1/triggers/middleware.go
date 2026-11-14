@@ -3,6 +3,7 @@ package triggers
 import (
 	"net/http"
 
+	"github.com/goodblaster/map-cache/internal/api/v1/reqbody"
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -20,6 +21,12 @@ func cacheMW(next echo.HandlerFunc) echo.HandlerFunc {
 		cache, err := caches.FetchCache(cacheName)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusFailedDependency, "cache not found").SetInternal(err)
+		}
+
+		// Read the body before taking the cache lock so that a slow upload
+		// cannot stall every other request to this cache.
+		if err := reqbody.Buffer(c); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "could not read request body").SetInternal(err)
 		}
 
 		// Generate a request ID and set it in the context

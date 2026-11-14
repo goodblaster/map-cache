@@ -3,6 +3,7 @@ package caches
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,7 +19,7 @@ type Cache struct {
 	expMillis     *int64               // TTL in milliseconds (for stats)
 	keyExps       map[string]*Timer    // key-based expiration timers
 	triggers      map[string][]Trigger // key-based triggers
-	lastAccessed  *time.Time           // last access timestamp
+	lastAccessed  time.Time            // last access timestamp (zero if never accessed)
 	activityCount atomic.Int64         // count of operations (thread-safe)
 	opStats       *OperationStats      // long-running operation tracking
 
@@ -55,12 +56,58 @@ func (cache *Cache) SizeBytes(ctx context.Context) int {
 		return 0
 	}
 
-	// Marshal to JSON to get byte size
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return 0
+	// Walk the data instead of marshaling it: this runs under the cache lock
+	// on every metrics tick, and marshaling allocates a full copy of the cache.
+	return approxJSONSize(data)
+}
+
+// approxJSONSize estimates the length of v's JSON encoding without building
+// it. String escaping is ignored, so the result can slightly undercount.
+func approxJSONSize(v any) int {
+	switch t := v.(type) {
+	case nil:
+		return 4
+	case bool:
+		if t {
+			return 4
+		}
+		return 5
+	case string:
+		return len(t) + 2
+	case float64:
+		var buf [32]byte
+		return len(strconv.AppendFloat(buf[:0], t, 'g', -1, 64))
+	case int:
+		var buf [24]byte
+		return len(strconv.AppendInt(buf[:0], int64(t), 10))
+	case int64:
+		var buf [24]byte
+		return len(strconv.AppendInt(buf[:0], t, 10))
+	case map[string]any:
+		size := 2 // braces
+		for k, child := range t {
+			size += len(k) + 3 + approxJSONSize(child) + 1 // "key": value,
+		}
+		if len(t) > 0 {
+			size-- // no trailing comma
+		}
+		return size
+	case []any:
+		size := 2 // brackets
+		for _, child := range t {
+			size += approxJSONSize(child) + 1
+		}
+		if len(t) > 0 {
+			size--
+		}
+		return size
+	default:
+		bytes, err := json.Marshal(t)
+		if err != nil {
+			return 0
+		}
+		return len(bytes)
 	}
-	return len(bytes)
 }
 
 // TTLMillis returns the cache-level TTL in milliseconds, or nil if not set.
@@ -72,7 +119,11 @@ func (cache *Cache) TTLMillis() *int64 {
 // LastAccessed returns the last access timestamp, or nil if never accessed.
 // This method is NOT thread-safe - caller must acquire the cache lock first.
 func (cache *Cache) LastAccessed() *time.Time {
-	return cache.lastAccessed
+	if cache.lastAccessed.IsZero() {
+		return nil
+	}
+	t := cache.lastAccessed
+	return &t
 }
 
 // ActivityCount returns the total number of operations performed on this cache.
@@ -86,8 +137,7 @@ func (cache *Cache) ActivityCount() int64 {
 // This method is NOT thread-safe for lastAccessed - caller must hold the lock.
 func (cache *Cache) recordActivity() {
 	cache.activityCount.Add(1)
-	now := time.Now()
-	cache.lastAccessed = &now
+	cache.lastAccessed = time.Now()
 }
 
 // WildKeys returns all keys matching the wildcard pattern.
