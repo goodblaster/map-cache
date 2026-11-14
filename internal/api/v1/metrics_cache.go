@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"sync"
 
 	"github.com/goodblaster/map-cache/pkg/caches"
 	"github.com/prometheus/client_golang/prometheus"
@@ -58,6 +59,12 @@ var (
 	)
 )
 
+// reportedCaches is the set of cache names that currently have metric series.
+var (
+	reportedCachesMu sync.Mutex
+	reportedCaches   = map[string]struct{}{}
+)
+
 // UpdateCacheMetrics updates Prometheus metrics with current cache statistics.
 // This should be called periodically (e.g., every 10 seconds) to keep metrics fresh.
 func UpdateCacheMetrics() {
@@ -66,6 +73,26 @@ func UpdateCacheMetrics() {
 
 	// Update total cache count
 	cacheCount.Set(float64(len(cacheNames)))
+
+	// Drop the series of caches that no longer exist. Caches are often created
+	// with unique names and a TTL, so stale labels would otherwise accumulate
+	// (and keep reporting their last values) forever.
+	current := make(map[string]struct{}, len(cacheNames))
+	for _, name := range cacheNames {
+		current[name] = struct{}{}
+	}
+	reportedCachesMu.Lock()
+	for name := range reportedCaches {
+		if _, ok := current[name]; !ok {
+			cacheSizeBytes.DeleteLabelValues(name)
+			cacheKeyCount.DeleteLabelValues(name)
+			cacheActivityCount.DeleteLabelValues(name)
+			cacheLongOperations.DeleteLabelValues(name)
+			cacheTimeoutOperations.DeleteLabelValues(name)
+		}
+	}
+	reportedCaches = current
+	reportedCachesMu.Unlock()
 
 	for _, name := range cacheNames {
 		cache, err := caches.FetchCache(name)

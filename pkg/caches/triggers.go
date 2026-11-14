@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/goodblaster/errors"
+	"github.com/goodblaster/map-cache/internal/config"
 )
 
 // Trigger recursion limits
@@ -50,14 +51,24 @@ func (cache *Cache) OnChange(ctx context.Context, key string, oldValue any, newV
 		return ErrTriggerRecursionLimit.Format(MaxTriggerDepth)
 	}
 
-	// Increment depth for nested trigger executions
-	ctx = context.WithValue(ctx, triggerDepthContextKey, depth+1)
+	// Most writes have no triggers to consider.
+	if len(cache.triggers) == 0 {
+		return nil
+	}
+
+	depthSet := false
 	for triggerKey, triggers := range cache.triggers {
 		// Match the changed key against the trigger pattern segment by segment.
 		// This avoids walking the cache data for every write.
-		vars, err := ExtractWildcardMatches(key, triggerKey)
-		if err != nil {
+		vars, ok := matchPattern(key, triggerKey)
+		if !ok {
 			continue
+		}
+
+		// Increment depth for nested trigger executions
+		if !depthSet {
+			ctx = context.WithValue(ctx, triggerDepthContextKey, depth+1)
+			depthSet = true
 		}
 
 		for _, trigger := range triggers {
@@ -84,12 +95,12 @@ func (cache *Cache) KeysMatch(ctx context.Context, triggerKey, dataKey string) [
 
 // ExtractWildcardMatches returns values that match wildcards in triggerKey.
 func ExtractWildcardMatches(key, triggerKey string) ([]string, error) {
-	// Normalize by trimming any leading/trailing slashes
-	key = strings.Trim(key, "/")
-	triggerKey = strings.Trim(triggerKey, "/")
+	// Normalize by trimming any leading/trailing delimiters
+	key = trimDelimiters(key)
+	triggerKey = trimDelimiters(triggerKey)
 
-	keyParts := strings.Split(key, "/")
-	triggerParts := strings.Split(triggerKey, "/")
+	keyParts := strings.Split(key, config.KeyDelimiter)
+	triggerParts := strings.Split(triggerKey, config.KeyDelimiter)
 
 	if len(keyParts) != len(triggerParts) {
 		return nil, ErrMismatchedPathLengths.Format(keyParts, triggerParts)

@@ -2,7 +2,6 @@ package caches
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -22,7 +21,7 @@ func RETURN(key any) Command {
 func (p CommandReturn) Do(ctx context.Context, cache *Cache) CmdResult {
 	switch str := p.Key.(type) {
 	case string:
-		resolvedVal, err := evaluateInterpolations(ctx, cache, str)
+		resolvedVal, err := evaluateInterpolations(ctx, cache, substituteContextVars(ctx, str))
 		if err != nil {
 			return CmdResult{Error: err}
 		}
@@ -145,12 +144,7 @@ func evaluateInterpolations(ctx context.Context, cache *Cache, s string) (any, e
 			return nil, ErrInterpolation.Format(keyExpr, err)
 		}
 
-		// Optimize: avoid fmt.Sprintf if value is already a string
-		if str, ok := val.(string); ok {
-			builder.WriteString(str)
-		} else {
-			builder.WriteString(fmt.Sprintf("%v", val))
-		}
+		builder.WriteString(FormatValue(val))
 
 		lastIndex = end
 	}

@@ -164,3 +164,23 @@ func TestLoggingMiddleware_OrderMatters(t *testing.T) {
 	assert.Contains(t, mockLogger.Fields, "request_id", "Should have request_id when middleware order is correct")
 	assert.NotEmpty(t, mockLogger.Fields["request_id"], "Request ID should not be empty")
 }
+
+func TestLoggingMiddleware_LogsReturnedErrorStatus(t *testing.T) {
+	mockLogger := log.NewMockLogger()
+	prev := log.Default()
+	log.SetDefault(mockLogger)
+	defer log.SetDefault(prev)
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodGet, "/missing", nil)
+	c := e.NewContext(req, httptest.NewRecorder())
+
+	handler := LoggingMiddleware(func(c echo.Context) error {
+		return echo.NewHTTPError(http.StatusNotFound, "key not found")
+	})
+	assert.Error(t, handler(c))
+
+	// The response has not been written when the middleware logs, so the
+	// status must come from the returned error rather than defaulting to 200.
+	assert.Equal(t, http.StatusNotFound, mockLogger.Fields["status"])
+}

@@ -1,5 +1,5 @@
 # Stage 1: Build using standard Golang image
-FROM golang:1.24 as builder
+FROM golang:1.26 AS builder
 
 ENV CGO_ENABLED=0
 WORKDIR /app

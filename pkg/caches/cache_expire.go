@@ -57,13 +57,20 @@ func (cache *Cache) expirationWorker() {
 			// Split the key into path components
 			path := SplitKey(key)
 
+			// Drop this key's timer along with the timers of any keys nested
+			// beneath it. Otherwise a nested timer outlives its key and later
+			// deletes a key of the same name that was created in the meantime.
+			value, getErr := cache.cmap.Get(ctx, path...)
+			cache.clearKeyTTLs(key, getErr == nil && isContainer(value))
+			if getErr != nil {
+				// Already gone (e.g. its parent was replaced); nothing to delete.
+				continue
+			}
+
 			// Delete the key from the underlying map
 			if err := cache.cmap.Delete(ctx, path...); err != nil {
 				log.WithError(err).With("key", key).Warn("failed to delete expired key")
 			}
-
-			// Clean up timer reference (already stopped by FutureFunc)
-			delete(cache.keyExps, key)
 		}
 
 		cache.Release(tag)

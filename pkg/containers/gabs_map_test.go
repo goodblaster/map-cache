@@ -518,3 +518,20 @@ func TestGabsMap_NewGabsMap(t *testing.T) {
 	assert.NotNil(t, gMap)
 	assert.NotNil(t, gMap.container)
 }
+
+func TestGabsMap_WildKeys_KeysContainingDots(t *testing.T) {
+	ctx := context.Background()
+	m := NewGabsMap()
+	require.NoError(t, m.Set(ctx, 1.0, "example.com", "hits"))
+	require.NoError(t, m.Set(ctx, 2.0, "plain", "hits"))
+	require.NoError(t, m.Set(ctx, []any{"a", nil, "c"}, "list"))
+
+	assert.ElementsMatch(t, []string{"example.com/hits", "plain/hits"}, m.WildKeys(ctx, "*/hits"))
+	assert.ElementsMatch(t, []string{"example.com", "plain", "list"}, m.WildKeys(ctx, "*"))
+	assert.Equal(t, []string{"example.com/hits"}, m.WildKeys(ctx, "example.com/hits"))
+
+	// Array elements are addressed by index; nulls and out-of-range indexes don't match.
+	assert.ElementsMatch(t, []string{"list/0", "list/2"}, m.WildKeys(ctx, "list/*"))
+	assert.Empty(t, m.WildKeys(ctx, "list/7"))
+	assert.Empty(t, m.WildKeys(ctx, "list/-1"))
+}

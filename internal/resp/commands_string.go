@@ -3,6 +3,7 @@ package resp
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -83,7 +84,7 @@ func HandleSet(s *Session, args []respProto.Value) error {
 	for i := 2; i < len(args); i++ {
 		opt := strings.ToUpper(args[i].String())
 		switch opt {
-		case "EX":  // Expire in seconds
+		case "EX": // Expire in seconds
 			if i+1 >= len(args) {
 				return s.WriteError("ERR syntax error")
 			}
@@ -94,7 +95,7 @@ func HandleSet(s *Session, args []respProto.Value) error {
 			}
 			ttl := seconds * 1000
 			ttlMillis = &ttl
-		case "PX":  // Expire in milliseconds
+		case "PX": // Expire in milliseconds
 			if i+1 >= len(args) {
 				return s.WriteError("ERR syntax error")
 			}
@@ -117,6 +118,9 @@ func HandleSet(s *Session, args []respProto.Value) error {
 
 	if (nx && xx) || (keepTTL && ttlMillis != nil) {
 		return s.WriteError("ERR syntax error")
+	}
+	if ttlMillis != nil && *ttlMillis <= 0 {
+		return s.WriteError("ERR invalid expire time in 'set' command")
 	}
 
 	cache, err := caches.FetchCache(s.SelectedCache())
@@ -193,6 +197,11 @@ func HandleDel(s *Session, args []respProto.Value) error {
 
 	deletedCount := 0
 	for _, key := range keys {
+		// Delete succeeds for missing keys too, so check existence to report
+		// the number of keys actually removed.
+		if _, err := cache.Get(ctx, key); err != nil {
+			continue
+		}
 		if err := cache.Delete(ctx, key); err == nil {
 			deletedCount++
 		}
@@ -272,6 +281,20 @@ func HandleDecrBy(s *Session, args []respProto.Value) error {
 	return handleIncrBy(s, []respProto.Value{args[0]}, -decrement)
 }
 
+// maxExactFloatInt is the largest magnitude at which every integer is exactly
+// representable as a float64 (the type JSON numbers are stored as).
+const maxExactFloatInt = 1 << 53
+
+// toRedisInt interprets a stored value as a Redis integer. Values written with
+// SET are stored as strings, so "10" must be accepted as well as numbers.
+func toRedisInt(value any) (int64, bool) {
+	if str, ok := value.(string); ok {
+		n, err := strconv.ParseInt(str, 10, 64)
+		return n, err == nil
+	}
+	return caches.ToInt64(value)
+}
+
 // handleIncrBy is a helper for INCR, DECR, INCRBY, DECRBY
 func handleIncrBy(s *Session, args []respProto.Value, increment int64) error {
 	if len(args) != 1 {
@@ -292,18 +315,39 @@ func handleIncrBy(s *Session, args []respProto.Value, increment int64) error {
 	ctx, cancel := context.WithTimeout(s.Context(), 5*time.Second)
 	defer cancel()
 
-	// If key doesn't exist, create it with value 0
-	_, getErr := cache.Get(ctx, key)
-	if getErr != nil {
-		// Key doesn't exist, create with value 0
-		if err := cache.Create(ctx, map[string]any{key: float64(0)}); err != nil {
-			return s.WriteError(fmt.Sprintf("ERR %s", err.Error()))
+	// A missing key counts as 0
+	var current int64
+	value, getErr := cache.Get(ctx, key)
+	exists := getErr == nil
+	if exists {
+		n, ok := toRedisInt(value)
+		if !ok {
+			return s.WriteError("ERR value is not an integer or out of range")
 		}
+		current = n
 	}
 
-	newValue, incrementErr := cache.Increment(ctx, key, increment)
-	if incrementErr != nil {
-		return s.WriteError(fmt.Sprintf("ERR %s", incrementErr.Error()))
+	if (increment > 0 && current > math.MaxInt64-increment) ||
+		(increment < 0 && current < math.MinInt64-increment) {
+		return s.WriteError("ERR increment or decrement would overflow")
+	}
+	newValue := current + increment
+
+	// Store as a JSON number while that is exact; beyond 2^53 a float64 would
+	// silently lose precision, so fall back to a decimal string (which is how
+	// Redis itself stores integers).
+	var stored any = float64(newValue)
+	if newValue > maxExactFloatInt || newValue < -maxExactFloatInt {
+		stored = strconv.FormatInt(newValue, 10)
+	}
+
+	if exists {
+		err = cache.Replace(ctx, key, stored)
+	} else {
+		err = cache.Create(ctx, map[string]any{key: stored})
+	}
+	if err != nil {
+		return s.WriteError(fmt.Sprintf("ERR %s", err.Error()))
 	}
 
 	return s.WriteValue(Integer(int(newValue)))
@@ -416,7 +460,7 @@ func HandleGetSet(s *Session, args []respProto.Value) error {
 	}
 
 	// Set new value (create or replace)
-	if oldValue != nil {
+	if err == nil {
 		if err := cache.Replace(ctx, key, newValue); err != nil {
 			return s.WriteError(fmt.Sprintf("ERR %s", err.Error()))
 		}
@@ -476,6 +520,9 @@ func HandleSetEX(s *Session, args []respProto.Value) error {
 		return s.WriteError("ERR value is not an integer or out of range")
 	}
 	value := args[2].String()
+	if seconds <= 0 {
+		return s.WriteError("ERR invalid expire time in 'setex' command")
+	}
 
 	cache, err := caches.FetchCache(s.SelectedCache())
 	if err != nil {
@@ -521,6 +568,9 @@ func HandlePSetEX(s *Session, args []respProto.Value) error {
 		return s.WriteError("ERR value is not an integer or out of range")
 	}
 	value := args[2].String()
+	if milliseconds <= 0 {
+		return s.WriteError("ERR invalid expire time in 'psetex' command")
+	}
 
 	cache, err := caches.FetchCache(s.SelectedCache())
 	if err != nil {
@@ -581,7 +631,7 @@ func HandleStrLen(s *Session, args []respProto.Value) error {
 	}
 
 	// Convert to string and get length
-	str := fmt.Sprintf("%v", value)
+	str := caches.FormatValue(value)
 	return s.WriteValue(Integer(len(str)))
 }
 
@@ -618,7 +668,7 @@ func HandleAppend(s *Session, args []respProto.Value) error {
 		}
 	} else {
 		// Concatenate
-		newValue = fmt.Sprintf("%v%s", existingValue, appendValue)
+		newValue = caches.FormatValue(existingValue) + appendValue
 		// Replace the key
 		if err := cache.Replace(ctx, key, newValue); err != nil {
 			return s.WriteError(fmt.Sprintf("ERR %s", err.Error()))
@@ -662,7 +712,7 @@ func HandleGetRange(s *Session, args []respProto.Value) error {
 		return s.WriteValue(BulkString(""))
 	}
 
-	str := fmt.Sprintf("%v", value)
+	str := caches.FormatValue(value)
 	length := int64(len(str))
 
 	// Handle negative indices
@@ -689,6 +739,9 @@ func HandleGetRange(s *Session, args []respProto.Value) error {
 	return s.WriteValue(BulkString(substring))
 }
 
+// maxStringSize is the largest string value SETRANGE will build (512MB).
+const maxStringSize = 512 * 1024 * 1024
+
 // HandleSetRange implements the SETRANGE command (set substring)
 func HandleSetRange(s *Session, args []respProto.Value) error {
 	if len(args) != 3 {
@@ -704,6 +757,11 @@ func HandleSetRange(s *Session, args []respProto.Value) error {
 
 	if offset < 0 {
 		return s.WriteError("ERR offset is out of range")
+	}
+	// Same limit as Redis (512MB). Without it a single command can ask for an
+	// arbitrarily large allocation.
+	if offset > maxStringSize || offset+int64(len(newValue)) > maxStringSize {
+		return s.WriteError("ERR string exceeds maximum allowed size (proto-max-bulk-len)")
 	}
 
 	cache, cacheErr := caches.FetchCache(s.SelectedCache())
@@ -724,12 +782,12 @@ func HandleSetRange(s *Session, args []respProto.Value) error {
 	if getErr != nil {
 		str = ""
 	} else {
-		str = fmt.Sprintf("%v", value)
+		str = caches.FormatValue(value)
 	}
 
 	// Pad with zeros if needed
 	if int64(len(str)) < offset {
-		str = str + string(make([]byte, int(offset)-len(str)))
+		str = str + strings.Repeat("\x00", int(offset)-len(str))
 	}
 
 	// Replace substring
@@ -765,6 +823,8 @@ func HandleGetEX(s *Session, args []respProto.Value) error {
 	// Parse expiration options
 	var expirationMs int64
 	hasExpiration := false
+	persist := false
+	relative := false // EX/PX: a non-positive value is an error, not "already expired"
 
 	for i := 1; i < len(args); i++ {
 		option := strings.ToUpper(args[i].String())
@@ -780,6 +840,7 @@ func HandleGetEX(s *Session, args []respProto.Value) error {
 			}
 			expirationMs = seconds * 1000
 			hasExpiration = true
+			relative = true
 		case "PX":
 			if i+1 >= len(args) {
 				return s.WriteError("ERR syntax error")
@@ -791,6 +852,7 @@ func HandleGetEX(s *Session, args []respProto.Value) error {
 			}
 			expirationMs = ms
 			hasExpiration = true
+			relative = true
 		case "EXAT":
 			if i+1 >= len(args) {
 				return s.WriteError("ERR syntax error")
@@ -816,11 +878,17 @@ func HandleGetEX(s *Session, args []respProto.Value) error {
 			expirationMs = timestampMs - nowMs
 			hasExpiration = true
 		case "PERSIST":
-			hasExpiration = false
-			expirationMs = 0
+			persist = true
 		default:
 			return s.WriteError("ERR syntax error")
 		}
+	}
+
+	if persist && hasExpiration {
+		return s.WriteError("ERR syntax error")
+	}
+	if relative && expirationMs <= 0 {
+		return s.WriteError("ERR invalid expire time in 'getex' command")
 	}
 
 	cache, err := caches.FetchCache(s.SelectedCache())
@@ -841,11 +909,15 @@ func HandleGetEX(s *Session, args []respProto.Value) error {
 		return s.WriteValue(NullBulkString())
 	}
 
-	// Set expiration if requested
-	if hasExpiration {
-		if expirationMs > 0 {
-			cache.SetKeyTTL(ctx, key, expirationMs)
-		}
+	switch {
+	case persist:
+		// Remove any existing TTL
+		cache.CancelKeyTTL(ctx, key)
+	case hasExpiration && expirationMs > 0:
+		cache.SetKeyTTL(ctx, key, expirationMs)
+	case hasExpiration:
+		// EXAT/PXAT in the past: the key expires immediately
+		cache.Delete(ctx, key)
 	}
 
 	return s.WriteValue(ConvertToRESP(value))

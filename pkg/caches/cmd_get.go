@@ -18,7 +18,7 @@ func GET(key string) Command {
 }
 
 func (p CommandGet) Do(ctx context.Context, cache *Cache) CmdResult {
-	key := p.Key
+	key := substituteContextVars(ctx, p.Key)
 
 	if !strings.Contains(key, "*") {
 		val, err := cache.Get(ctx, key)

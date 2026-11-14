@@ -332,17 +332,15 @@ func HandleKeys(s *Session, args []respProto.Value) error {
 
 	// Translate Redis glob pattern to map-cache wildcard pattern
 	// Redis uses * for any characters, map-cache uses * for path segments
-	// For now, translate : to / and use as-is
-	translatedPattern := strings.ReplaceAll(pattern, ":", "/")
+	translatedPattern := TranslateKey(pattern)
 
 	// Get matching keys
 	keys := cache.WildKeys(ctx, translatedPattern)
 
-	// Convert back to Redis format (/ → :)
+	// Convert back to Redis format
 	redisKeys := make([]respProto.Value, len(keys))
 	for i, key := range keys {
-		redisKey := strings.ReplaceAll(key, "/", ":")
-		redisKeys[i] = BulkString(redisKey)
+		redisKeys[i] = BulkString(UntranslateKey(key))
 	}
 
 	return s.WriteValue(Array(redisKeys))
@@ -651,8 +649,9 @@ func HandleCopy(s *Session, args []respProto.Value) error {
 		cache.Delete(ctx, destKey)
 	}
 
-	// Copy the value to destination
-	if createErr := cache.Create(ctx, map[string]any{destKey: sourceValue}); createErr != nil {
+	// Copy the value to destination. Hashes and lists must be deep-copied, or
+	// the two keys would share storage and a write to one would change both.
+	if createErr := cache.Create(ctx, map[string]any{destKey: deepCopy(sourceValue)}); createErr != nil {
 		return s.WriteError(fmt.Sprintf("ERR %s", createErr.Error()))
 	}
 

@@ -18,6 +18,9 @@ func DELETE(key string) Command {
 }
 
 func (p CommandDelete) Do(ctx context.Context, cache *Cache) CmdResult {
+	// Interpolate trigger wildcard variables (e.g., ${{1}}) in the key.
+	p.Key = substituteContextVars(ctx, p.Key)
+
 	// Check if pattern contains wildcards
 	if strings.Contains(p.Key, "*") {
 		// Get all matching keys first (to return their values)

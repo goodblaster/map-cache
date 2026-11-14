@@ -3,9 +3,8 @@ package caches
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
-	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -24,7 +23,10 @@ func FOR(loopExpr string, cmds ...Command) Command {
 
 func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 	// Extract pattern like ${{job-1234/domains/*/countdown}} using shared regex
-	match := InterpolationPattern.FindStringSubmatch(f.LoopExpr)
+	// Inside a trigger, the loop expression itself may reference the trigger's
+	// wildcard captures, e.g. ${{jobs/${{1}}/tasks/*/status}}.
+	loopExpr := substituteContextVars(ctx, f.LoopExpr)
+	match := InterpolationPattern.FindStringSubmatch(loopExpr)
 	if len(match) < 2 {
 		return CmdResult{Error: ErrInvalidForExpression.Format(f.LoopExpr)}
 	}
@@ -47,14 +49,6 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 		return CmdResult{Error: ErrForExpressionNeedsWildcard.Format(keyPattern)}
 	}
 
-	// Build a regex from the wildcard pattern
-	regexPattern := regexp.QuoteMeta(keyPattern)
-	starCount := strings.Count(keyPattern, "*")
-	for i := 0; i < starCount; i++ {
-		regexPattern = strings.Replace(regexPattern, "\\*", "([^/]+)", 1)
-	}
-	keyRegex := regexp.MustCompile("^" + regexPattern + "$")
-
 	// Resolve keys
 	keys := cache.cmap.WildKeys(ctx, keyPattern)
 	var allResults []CmdResult
@@ -65,9 +59,8 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 			return CmdResult{Error: err}
 		}
 
-		submatches := keyRegex.FindStringSubmatch(key)
-		if len(submatches) != starCount+1 {
-			// No match or incorrect group count
+		captures, ok := matchPattern(key, keyPattern)
+		if !ok {
 			continue
 		}
 
@@ -78,7 +71,7 @@ func (f CommandFor) Do(ctx context.Context, cache *Cache) CmdResult {
 			}
 
 			// Replace ${{1}}, ${{2}}, ... with the captured fragments
-			transformed := transformCommand(cmd, submatches[1:])
+			transformed := transformCommand(cmd, captures)
 
 			result := transformed.Do(ctx, cache)
 			allResults = append(allResults, result)
@@ -165,8 +158,11 @@ func transformCommand(cmd Command, captures []string) Command {
 }
 
 func substituteCaptures(s string, captures []string) string {
+	if len(captures) == 0 || !strings.Contains(s, "${{") {
+		return s
+	}
 	for i, val := range captures {
-		placeholder := fmt.Sprintf("${{%d}}", i+1)
+		placeholder := "${{" + strconv.Itoa(i+1) + "}}"
 		s = strings.ReplaceAll(s, placeholder, val)
 	}
 	return s

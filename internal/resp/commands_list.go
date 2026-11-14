@@ -58,6 +58,17 @@ func setList(ctx context.Context, cache *caches.Cache, key string, list []any) e
 	return cache.Create(ctx, map[string]any{key: list})
 }
 
+// prependValues pushes values onto the head of list one at a time, as Redis
+// does: LPUSH key a b c leaves the list starting c, b, a. It builds a new slice
+// in a single allocation rather than re-copying the list once per value.
+func prependValues(list []any, values []respProto.Value) []any {
+	result := make([]any, 0, len(values)+len(list))
+	for i := len(values) - 1; i >= 0; i-- {
+		result = append(result, values[i].String())
+	}
+	return append(result, list...)
+}
+
 // HandleLPush implements the LPUSH command (prepend to list)
 func HandleLPush(s *Session, args []respProto.Value) error {
 	if len(args) < 2 {
@@ -84,11 +95,8 @@ func HandleLPush(s *Session, args []respProto.Value) error {
 		return s.WriteError(fmt.Sprintf("ERR %s", listErr.Error()))
 	}
 
-	// Prepend values (in reverse order to maintain order)
-	for i := len(args) - 1; i >= 1; i-- {
-		value := args[i].String()
-		list = append([]any{value}, list...)
-	}
+	// Prepend values
+	list = prependValues(list, args[1:])
 
 	// Store updated list
 	if setErr := setList(ctx, cache, key, list); setErr != nil {
@@ -171,11 +179,8 @@ func HandleLPushX(s *Session, args []respProto.Value) error {
 		return s.WriteError(fmt.Sprintf("ERR %s", listErr.Error()))
 	}
 
-	// Prepend values in reverse order (so first arg becomes first element)
-	for i := len(args) - 1; i >= 1; i-- {
-		value := args[i].String()
-		list = append([]any{value}, list...)
-	}
+	// Prepend values
+	list = prependValues(list, args[1:])
 
 	// Store updated list
 	if setErr := setList(ctx, cache, key, list); setErr != nil {
@@ -647,7 +652,7 @@ func HandleLInsert(s *Session, args []respProto.Value) error {
 	// Find pivot
 	pivotIndex := -1
 	for i, item := range list {
-		if fmt.Sprintf("%v", item) == pivot {
+		if caches.FormatValue(item) == pivot {
 			pivotIndex = i
 			break
 		}
@@ -715,7 +720,7 @@ func HandleLRem(s *Session, args []respProto.Value) error {
 	if count == 0 {
 		// Remove all occurrences
 		for _, item := range list {
-			if fmt.Sprintf("%v", item) != element {
+			if caches.FormatValue(item) != element {
 				newList = append(newList, item)
 			} else {
 				removed++
@@ -724,22 +729,26 @@ func HandleLRem(s *Session, args []respProto.Value) error {
 	} else if count > 0 {
 		// Remove first N occurrences
 		for _, item := range list {
-			if fmt.Sprintf("%v", item) == element && removed < int(count) {
+			if caches.FormatValue(item) == element && removed < int(count) {
 				removed++
 			} else {
 				newList = append(newList, item)
 			}
 		}
 	} else {
-		// Remove last N occurrences (count is negative)
+		// Remove last N occurrences (count is negative): mark them walking
+		// backwards, then rebuild in order.
 		count = -count
-		// Process in reverse
-		for i := len(list) - 1; i >= 0; i-- {
-			item := list[i]
-			if fmt.Sprintf("%v", item) == element && removed < int(count) {
+		remove := make([]bool, len(list))
+		for i := len(list) - 1; i >= 0 && removed < int(count); i-- {
+			if caches.FormatValue(list[i]) == element {
+				remove[i] = true
 				removed++
-			} else {
-				newList = append([]any{item}, newList...)
+			}
+		}
+		for i, item := range list {
+			if !remove[i] {
+				newList = append(newList, item)
 			}
 		}
 	}
@@ -770,6 +779,7 @@ func HandleLPos(s *Session, args []respProto.Value) error {
 	rank := int64(1)
 	count := int64(0)
 	maxlen := int64(0)
+	returnArray := false // COUNT given: reply with an array of positions
 
 	for i := 2; i < len(args); i += 2 {
 		if i+1 >= len(args) {
@@ -786,6 +796,7 @@ func HandleLPos(s *Session, args []respProto.Value) error {
 			rank = value
 		case "COUNT":
 			count = value
+			returnArray = true
 		case "MAXLEN":
 			maxlen = value
 		default:
@@ -824,12 +835,11 @@ func HandleLPos(s *Session, args []respProto.Value) error {
 	// Find matching positions
 	positions := make([]int64, 0)
 	matchCount := int64(0)
-	returnArray := len(args) > 2 && strings.ToUpper(args[len(args)-2].String()) == "COUNT"
 
 	if rank >= 0 {
 		// Forward search
 		for i := 0; i < searchLen; i++ {
-			if fmt.Sprintf("%v", list[i]) == element {
+			if caches.FormatValue(list[i]) == element {
 				matchCount++
 				if matchCount >= rank {
 					positions = append(positions, int64(i))
@@ -843,7 +853,7 @@ func HandleLPos(s *Session, args []respProto.Value) error {
 		// Reverse search
 		absRank := -rank
 		for i := searchLen - 1; i >= 0; i-- {
-			if fmt.Sprintf("%v", list[i]) == element {
+			if caches.FormatValue(list[i]) == element {
 				matchCount++
 				if matchCount >= absRank {
 					positions = append(positions, int64(i))

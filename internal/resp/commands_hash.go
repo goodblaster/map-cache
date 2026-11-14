@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/goodblaster/map-cache/pkg/caches"
@@ -37,7 +38,7 @@ func HandleHGet(s *Session, args []respProto.Value) error {
 
 	key := TranslateKey(args[0].String())
 	field := args[1].String()
-	fullPath := key + "/" + field
+	fullPath := fieldPath(key, field)
 
 	cache, err := caches.FetchCache(s.SelectedCache())
 	if err != nil {
@@ -85,7 +86,7 @@ func HandleHSet(s *Session, args []respProto.Value) error {
 	for i := 1; i < len(args); i += 2 {
 		field := args[i].String()
 		value := args[i+1].String()
-		fullPath := key + "/" + field
+		fullPath := fieldPath(key, field)
 
 		// Check if field exists
 		_, getErr := cache.Get(ctx, fullPath)
@@ -177,7 +178,7 @@ func HandleHDel(s *Session, args []respProto.Value) error {
 	// Delete each field
 	for i := 1; i < len(args); i++ {
 		field := args[i].String()
-		fullPath := key + "/" + field
+		fullPath := fieldPath(key, field)
 
 		// Check if field exists
 		_, getErr := cache.Get(ctx, fullPath)
@@ -200,7 +201,7 @@ func HandleHExists(s *Session, args []respProto.Value) error {
 
 	key := TranslateKey(args[0].String())
 	field := args[1].String()
-	fullPath := key + "/" + field
+	fullPath := fieldPath(key, field)
 
 	cache, err := caches.FetchCache(s.SelectedCache())
 	if err != nil {
@@ -370,7 +371,7 @@ func HandleHMGet(s *Session, args []respProto.Value) error {
 	result := make([]respProto.Value, 0, len(args)-1)
 	for i := 1; i < len(args); i++ {
 		field := args[i].String()
-		fullPath := key + "/" + field
+		fullPath := fieldPath(key, field)
 
 		value, getErr := cache.Get(ctx, fullPath)
 		if getErr != nil {
@@ -408,7 +409,7 @@ func HandleHMSet(s *Session, args []respProto.Value) error {
 	for i := 1; i < len(args); i += 2 {
 		field := args[i].String()
 		value := args[i+1].String()
-		fullPath := key + "/" + field
+		fullPath := fieldPath(key, field)
 
 		// Check if field exists
 		_, getErr := cache.Get(ctx, fullPath)
@@ -441,7 +442,7 @@ func HandleHIncrBy(s *Session, args []respProto.Value) error {
 		return s.WriteError("ERR value is not an integer or out of range")
 	}
 
-	fullPath := key + "/" + field
+	fullPath := fieldPath(key, field)
 
 	cache, cacheErr := caches.FetchCache(s.SelectedCache())
 	if cacheErr != nil {
@@ -508,7 +509,7 @@ func HandleHIncrByFloat(s *Session, args []respProto.Value) error {
 		return s.WriteError("ERR value is not a valid float")
 	}
 
-	fullPath := key + "/" + field
+	fullPath := fieldPath(key, field)
 
 	cache, cacheErr := caches.FetchCache(s.SelectedCache())
 	if cacheErr != nil {
@@ -572,7 +573,7 @@ func HandleHSetNX(s *Session, args []respProto.Value) error {
 	key := TranslateKey(args[0].String())
 	field := args[1].String()
 	value := args[2].String()
-	fullPath := key + "/" + field
+	fullPath := fieldPath(key, field)
 
 	cache, err := caches.FetchCache(s.SelectedCache())
 	if err != nil {
@@ -621,7 +622,7 @@ func HandleHRandField(s *Session, args []respProto.Value) error {
 		count = int(count64)
 
 		// Check for WITHVALUES flag
-		if len(args) >= 3 && args[2].String() == "WITHVALUES" {
+		if len(args) >= 3 && strings.EqualFold(args[2].String(), "WITHVALUES") {
 			withValues = true
 		}
 	}

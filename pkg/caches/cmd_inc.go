@@ -20,9 +20,12 @@ func INC(key string, value float64) Command {
 }
 
 func (p CommandInc) Do(ctx context.Context, cache *Cache) CmdResult {
-	v, err := cache.Get(ctx, p.Key)
+	// Interpolate trigger wildcard variables (e.g., ${{1}}) in the key.
+	key := substituteContextVars(ctx, p.Key)
+
+	v, err := cache.Get(ctx, key)
 	if err != nil {
-		return CmdResult{Error: ErrKeyNotFound.Format(p.Key)}
+		return CmdResult{Error: ErrKeyNotFound.Format(key)}
 	}
 
 	f64, ok := ToFloat64(v)
@@ -31,7 +34,7 @@ func (p CommandInc) Do(ctx context.Context, cache *Cache) CmdResult {
 	}
 
 	f64 += p.Value
-	if err := cache.Replace(ctx, p.Key, f64); err != nil {
+	if err := cache.Replace(ctx, key, f64); err != nil {
 		return CmdResult{Error: err}
 	}
 	return CmdResult{Value: f64}

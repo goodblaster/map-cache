@@ -24,15 +24,15 @@ var ErrMismatchedPathLengths = errors.New("mismatched path lengths: %v vs %v")
 
 // Command and expression errors
 var ErrUnknownCommandType = errors.New("unknown command type: %s")
-var ErrInvalidExpression = errors.New("invalid expression: %w")
-var ErrEvaluationError = errors.New("evaluation error: %w")
+var ErrInvalidExpression = errors.New("invalid expression: %v")
+var ErrEvaluationError = errors.New("evaluation error: %v")
 var ErrExpressionNotBoolean = errors.New("expression did not return a boolean")
 var ErrInvalidForExpression = errors.New("invalid FOR expression: %s")
 var ErrForExpressionNeedsWildcard = errors.New("FOR expression must include a wildcard: %s")
 
 // Interpolation errors
-var ErrWildcardInterpolation = errors.New("wildcard interpolation error for key %q: %w")
-var ErrInterpolation = errors.New("interpolation error for key %q: %w")
+var ErrWildcardInterpolation = errors.New("wildcard interpolation error for key %q: %v")
+var ErrInterpolation = errors.New("interpolation error for key %q: %v")
 var ErrWildcardInTemplate = errors.New("wildcards not allowed in templated string: %q")
 var ErrWildcardWithFallback = errors.New("wildcards not allowed with fallback operator: %q")
 var ErrInvalidFallbackExpression = errors.New("fallback expression must have exactly 2 parts (key || default), got %d parts in: %q")
